@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type"
+	content="application/xhtml+xml; charset=utf-8" />
+	<?=$this->headScript();?>
+		
+    <?php $this->headLink()->appendStylesheet('/styles/admin.css');?>
+    <?php $this->headLink()->appendStylesheet('/styles/adminmenu.css');?>
+    <?php echo $this->headTitle() ?>
+    <?php echo  $this->headLink(); ?>
+    <?php 
+    if ( $this->dojo()->isEnabled()){
+    	$this->dojo()->setLocalPath('/js/dojo/dojo.js')->addStyleSheetModule('dijit.themes.tundra');
+    	echo $this->dojo();
+   	}?>
+   	
+   <?php echo $this->inlineScript() ?>
+  
+</head>
+<body>
+
+<?php
+$top = array(
+$this->navigation()->findOneBy('label', 'Admin'),
+$this->navigation()->findOneBy('label', 'Logout')
+);
+$headlinks = array();
+foreach($top as $page )
+{
+	$headlinks[]=$this->navigation()->htmlify($page);
+}
+$top_row = $this->partial('top_row.phtml','admin' ,array('pages'=>$headlinks));
+
+$headline = $this->navigation()->findOneByLabel('Logout');
+
+$headrow = $this->navigation()->findOneByLabel('head-row-admin');
+
+$topmenu = $this->navigation()->findOneByLabel('Admin');
+$options_top = array(
+    'indent'  => 16,
+    'ulClass' => 'headclass'
+);
+
+?>
+
+	<div id="page-wrapper" title="container">
+		<div class="container_12 content-wrapper" title="big_box">
+			<div class="grid_12" title="top_box">
+
+
+				<div id="headline">
+					<div style="float: right">
+
+
+
+
+					<?php echo $top_row ?></div>
+					<div style="float: right; margin-right: 20px;">
+						Ciao,
+						<?php echo $this->name ?>
+					</div>
+				</div>
+				
+			<?php echo  $this->partial('sunrise-gloss-menu.phtml',
+					array(	'divClass'	=>	'nav-container-outer',
+							'rootPage'	=>	'Admin',
+							'ulId_0'	=>	'nav-container',
+							'ulClass_0'	=>	'nav-container',
+							'ident'		=>	16,
+							'ulClass' 	=> 'size150',
+							'maxDepth'	=> 0,
+							'spanClass'	=> 'divider divider-vert')); ?>
+			</div>
+			<!-- top_box -->
+			<div class="clear"></div>
+			<!-- navigation -->
+			<div class="breadcrumbs">
+				Ti trovi:
+				<?php echo $this->navigation()->breadcrumbs()->setMinDepth(1)->setLinkLast(false)->setSeparator("» "); ?>
+			</div>
+			
+			<?php 
+ 				$err = $this->placeholder('error')->toString(); 
+ 				if(!empty($err))
+ 					echo '<div class="toprowerror">'.$err.'</div>';
+ 			?>
+			<div class="content">
+  				<?php echo $this->layout()->content; ?>
+			</div> <!-- content -->
+		</div>
+		<!-- big_box -->
+	</div>
+	<!-- container -->
+
+	<!-- debug start 
+		<?php echo "Memoria: ".$this->memUsed.'\n' ?>
+     debug end -->
+</body>
+</html>

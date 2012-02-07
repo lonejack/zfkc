@@ -1,0 +1,32 @@
+<table class="gentable">
+	<thead><tr><td width="20px">id</td><td width="100px">proprietario</td><td width="200px">argomento</td><td width="200px">parte</td><td width="200px">operazioni</td></tr></thead><tbody>
+    <?php $color='odd'?>
+	<?php foreach ($this->entries as $entry): ?>
+    <?php $id=$this->escape($entry->id) ?>
+    <tr class="<?=$color?>"><td><?=$id?></td>
+    <td><?php echo $this->escape($entry->username) ?></td>
+    <td><?php echo $this->escape($entry->argument) ?></td>
+    <td><?php echo $this->escape($entry->part) ?></td>
+    <td>
+    <?php if ($entry->isAllowed('view')): ?>
+    <a href="/admin/text/view/id/<?=$id?>"><img src="/images/1300350010_kghostview.png" title="mostra dettagli" /></a>
+    <?php endif;?>
+    <?php if ($entry->isAllowed('edit')): ?>
+    <a href="/admin/text/edit/id/<?=$id?>"><img src="/images/1300350195_edit.png" title="modifica" /></a>
+    <?php endif;?>
+    <?php if ($entry->isAllowed('password')): ?>
+    <a href="/admin/text/changepw/id/<?=$id?>"><img src="/images/password-24.png" title="cambia password" /></a>
+    <?php endif;?>
+    <?php if ($entry->isAllowed('delete')): ?>
+    <a href="/admin/text/delete/id/<?=$id?>"><img src="/images/delete-24.png" title="elimina testo" /></a>
+    <?php endif;?>
+    </td>
+    
+    <!-- $this->url(array('username' => 'martel'), 'user') -->
+    </tr>
+    <?php $color = $color=='odd'?'even':'odd';?>
+    <?php endforeach ?>
+    </tbody>
+    </table>
+    <?php echo $this->paginator; ?>
+</dl>

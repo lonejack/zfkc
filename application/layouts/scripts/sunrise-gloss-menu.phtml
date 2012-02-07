@@ -1,0 +1,39 @@
+<?php
+/*
+ * source from: http://cssmenumaker.com
+ * tipo: Drop Down Menus 
+ * nome: Sunrise Gloss
+ * 
+ */
+	$this->navigation()->menu()->setUseAcl();
+	$titles = $this->navigation()->findOneByLabel($this->rootPage)->pages;
+	$acl = $this->navigation()->getAcl();
+	$role = $this->navigation()->getRole();
+	$cols = array();
+	foreach ($titles as $title)
+	{
+		if( $acl->isAllowed($role, $title->resource) )
+			$cols[] = array('page'=>$title);
+	}
+?>
+
+<div class="<?=$this->divClass?>">
+<img src="/images/layout/admin/nav-bg-l.jpg" alt="" class="float-left" />
+<img src="/images/layout/admin/nav-bg-r.jpg" alt="" class="float-right" />
+<ul id="<?=$this->ulId_0?>" class="<?=$this->ulClass_0?>">
+<?php
+foreach ($cols as $col)
+{
+	echo '<li>';
+	echo $this->navigation()->htmlify($col['page']);
+	echo $this->navigation()->menu()->renderMenu($col['page'],
+			array(	'indent'  => $this->ident,
+					'maxDepth'=> $this->maxDepth,
+					'ulClass' => $this->ulClass));
+	echo '</li><li><span class="'.$this->spanClass.'"</span></li>';
+} 
+
+?>
+</ul>
+</div>
+

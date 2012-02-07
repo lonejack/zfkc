@@ -1,0 +1,28 @@
+<?php
+if( !isset($this->language ) )
+{
+	header("Content-Type: text/javascript");
+}
+else
+{
+	header("Content-Type: text/javascript; charset={$this->language['_charset']}");
+}
+if(isset($this->headers))
+{
+	foreach ($this->headers as $header )
+	{
+		header($header);
+	}
+
+}
+
+if( isset($this->translation ) )
+{
+	// out data
+	foreach ($this->translation as $english => $native )
+	{
+		echo "browser.labels['" . $english . "']=\"" . $native . "\";";
+	}
+}
+
+?>

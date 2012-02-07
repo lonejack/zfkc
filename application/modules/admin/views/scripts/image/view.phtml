@@ -1,0 +1,20 @@
+<h5>Dati immagine:</h5>
+<div id="userdata-widget">
+<?php if ($this->error): ?>
+    <p class="error"><?php echo $this->escape($this->error) ?></p>
+<?php endif ?>
+    <div style="text-align:center;">
+    <img src="<?php echo $this->data['path']?>" /></div>
+    <div>
+	<table class="gentable">
+	<thead><tr><td width="150px">item</td><td width="500px">valore</td></tr></thead><tbody>
+	<?php $color='odd'?>
+    <?php foreach($this->data as $key => $value): ?>
+    <tr class="<?=$color?>"> <td><?=$key ?></td><td><?=$value ?></td> </tr>
+    <?php $color = $color=='odd'?'even':'odd';?>
+    <?php endforeach ?>
+    
+    <tbody>
+    </table>
+    </div>
+</div>

@@ -1,0 +1,10 @@
+<h5>Rinomina immagine:</h5>
+<?php if ($this->error): ?>
+<div id="userdata-widget">
+    <p class="error"><?php echo $this->escape($this->error) ?></p>
+</div>
+<?php else: ?>
+<img src="<?php echo $this->data['path']?>" />
+ <div> <?php echo $this->form; ?> </div>
+ 
+<?php endif?>

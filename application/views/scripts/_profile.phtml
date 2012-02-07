@@ -1,0 +1,14 @@
+<?php $identity = (array) $this->identity; ?>
+<div id="user-profile">
+    <?php echo 'Hello:'; ?><b><?php echo $this->escape($identity['username']) ?></b><br />
+    <p><u>Questi sono i tuoi dati</u>:</p>
+    <dl>
+    <?php foreach ($identity as $field => $value): ?>
+        <?php if ($field == 'username'):
+            continue;
+        endif ?>
+        <dt><?php echo ucfirst($field) ?>:</dt>
+        <dd><?php echo $this->escape($value) ?></dd>
+    <?php endforeach ?>
+    </dl>
+</div>
