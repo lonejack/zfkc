@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>KCFinder: /<?php echo $this->session['dir'] ?></title>
+<title>KCFinder: <?=$this->title?></title>
 <!--  php INCLUDE "$template_dir-tpl_css.php"   -->
 <!-- 
 <link href="css.php?type=<?php echo $this->type ?>" rel="stylesheet" type="text/css" />
@@ -15,7 +15,7 @@
 <script src="js/helper.js" type="text/javascript"></script>
 <script src="js/browser/joiner.php" type="text/javascript"></script>
 <!-- 
-<script src="js_localize.php?lng=<?php echo $this->lang ?>" type="text/javascript"></script>
+<script src="js_localize.php?lng=<?php echo $this->language ?>" type="text/javascript"></script>
 <?php if (isset($this->opener['TinyMCE']) && $this->opener['TinyMCE']): ?>
 <script src="<?php echo $this->config['_tinyMCEPath'] ?>/tiny_mce_popup.js" type="text/javascript"></script>
 <?php endif; ?>

@@ -69,13 +69,13 @@ class KcController extends Zend_Controller_Action
 	public function browseAction()
 	{
 		$config = new Zend_Config_Ini(APPLICATION_PATH.'/configs/KcConfig.ini', 'browser' );
-		$session = new Zend_Config_Ini(APPLICATION_PATH.'/configs/KcConfig.ini', 'session' );
-		if( count($session) )
+		if( isset($config->session) )
 		{
-			Zend_Session::setOptions($session->toArray());
+			Zend_Session::setOptions($config->session->toArray());
 		}
-		
-		
+		$this->view->title = 'demo';
+		$locale=new Zend_Locale();
+		$this->view->language = $locale->getLanguage().'-'.$locale->getRegion();
 	}
 	
 
