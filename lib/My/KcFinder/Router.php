@@ -32,6 +32,7 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 				return $defaults;
 			case 'browse.php':
 				$defaults['action'] = 'browse';
+				
 				return $defaults;
 				
 			default:

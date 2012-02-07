@@ -68,6 +68,8 @@ class KcController extends Zend_Controller_Action
 	
 	public function browseAction()
 	{
+		$request = $this->getRequest();
+		$params = $request->getParams();  
 		$config = new Zend_Config_Ini(APPLICATION_PATH.'/configs/KcConfig.ini', 'browser' );
 		if( isset($config->session) )
 		{
