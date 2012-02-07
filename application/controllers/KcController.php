@@ -80,17 +80,47 @@ class KcController extends Zend_Controller_Action
 		$this->view->language = $locale->getLanguage().'-'.$locale->getRegion();
 		if( isset($params['theme']) && file_exists($this->_kcfinderDir."/themes/{$params['theme']}" ) )
 		{
-			$this->view->theme = $params['theme'];				
+			$theme = $params['theme'];				
 		} 
 		else
 		{
-			$this->view->theme = $config->theme;
+			$theme = $config->theme;
 		}
 		
-		if( file_exists($this->_kcfinderDir."/themes/{$params['theme']}/init.js" ))
+		if( file_exists($this->_kcfinderDir."/themes/{$theme}/init.js" ))
 		{
-			$this->view->init_theme = $this->_kcfinderDir."/themes/{$params['theme']}/init.js";
+			$this->view->init_theme = $this->_kcfinderDir."/themes/{$theme}/init.js";
 		}
+		
+		$browser = array();
+		$browser['theme'] = $theme;
+		
+		$browser['version'] = '2.51';
+		$browser['tinyMCE'] = false;
+		$browser['tinyMCEpath'] = null;
+		$browser['cromeFrame'] = false;
+		$browser['supportZip'] = false; //class_exists('ZipArchive') && !$this->config['denyZipDownload']) ? "true" : "false"
+		$browser['check4Update'] = false; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
+		$browser['type'] = 'images';
+		$browser['access'] = json_encode($config->access);
+		$kcsession = Zend_Session::namespaceGet('KcFinder');
+		$browser['dir'] = 'images/public';//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
+		$browser['uploadURL'] = $config->uploadURL;
+		$browser['thumbsDir'] = $config->thumbsDir;
+		$browser['setOpener'] = false;
+		$browser['openerName'] = '';
+		$browser['isOpenedByCk'] = false; //isset($this->opener['CKEditor']['funcNum']) && preg_match('/^\d+$/', $this->opener['CKEditor']['funcNum'])
+		$browser['funcNumCkEditor'] = '';
+		$browser['openerName'] = null;
+		$browser['cms'] = null;
+		$front = Zend_Controller_Front::getInstance();
+		
+		
+		$kuki['domain'] = $front->getBaseUrl();//_.kuki.domain = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookieDomain']) ? >";
+		$kuki['path'] = '/';//_.kuki.path = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePath']) ? >";
+		$kuki['prefix'] = 'KCFINDER_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
+		$this->view->kuki = $kuki;
+		$this->view->browser = $browser;
 		
 	}
 	

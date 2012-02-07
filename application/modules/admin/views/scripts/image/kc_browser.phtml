@@ -13,42 +13,42 @@
 <script src="js/jquery.rightClick.js" type="text/javascript"></script>
 <script src="js/jquery.drag.js" type="text/javascript"></script>
 <script src="js/helper.js" type="text/javascript"></script>
-<script src="js/browser/joiner.php" type="text/javascript"></script>
 <!-- 
-<script src="js_localize.php?lng=<?php echo $this->lang ?>" type="text/javascript"></script>
+<script src="js/browser/joiner.php" type="text/javascript"></script>
+<//script src="js_localize.php?lng=<?php echo $this->lang ?>" type="text/javascript"></script>
 <?php if (isset($this->opener['TinyMCE']) && $this->opener['TinyMCE']): ?>
-<script src="<?php echo $this->config['_tinyMCEPath'] ?>/tiny_mce_popup.js" type="text/javascript"></script>
+<script src="<?= $this->tinyMCEPath ?>/tiny_mce_popup.js" type="text/javascript"></script>
 <?php endif; ?>
 <?php if (file_exists("themes/{$this->config['theme']}/init.js")): ?>
 <script src="themes/<?php echo $this->config['theme'] ?>/init.js" type="text/javascript"></script>
 <?php endif; ?>
  -->
 <script type="text/javascript">
-browser.version = "<?php echo $this->version ?>";
-browser.support.chromeFrame = <?php echo (strpos(strtolower($_SERVER['HTTP_USER_AGENT']), " chromeframe") !== false) ? "true" : "false" ?>;
-browser.support.zip = <?php echo (class_exists('ZipArchive') && !$this->config['denyZipDownload']) ? "true" : "false" ?>;
-browser.support.check4Update = <?php echo ((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false" ?>;
-browser.lang = "<?php echo Admin_Model_Kclib_Text::jsValue($this->lang) ?>";
-browser.type = "<?php echo Admin_Model_Kclib_Text::jsValue($this->type) ?>";
-browser.theme = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['theme']) ?>";
-browser.access = <?php echo json_encode($this->config['access']) ?>;
-browser.dir = "<?php echo Admin_Model_Kclib_Text::jsValue($this->session['dir']) ?>";
-browser.uploadURL = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['uploadURL']) ?>";
-browser.thumbsURL = browser.uploadURL + "/<?php echo Admin_Model_Kclib_Text::jsValue($this->config['thumbsDir']) ?>";
-<?php if (isset($this->get['opener']) && strlen($this->get['opener'])): ?>
-browser.opener.name = "<?php echo Admin_Model_Kclib_Text::jsValue($this->get['opener']) ?>";
+browser.version = "<?=$this->browser['version'] ?>";
+browser.support.chromeFrame = <?=$this->browser['cromeFrame'] ?>;
+browser.support.zip = <?=$this->browser['supportZip'] ?>;
+browser.support.check4Update = <?= $this->browser['check4Update'] ?>;
+browser.lang = "<?= $this->browser['language'] ?>";
+browser.type = "<?= echo $this->browser['type'] ?>";
+browser.theme = "<?= echo $this->browser['theme'] ?>";
+browser.access = <?= echo $this->browser['access'] ?>;
+browser.dir = "<?= echo $this->browser['dir'] ?>";
+browser.uploadURL = "<?= echo $this->browser['uploadURL'] ?>";
+browser.thumbsURL = browser.uploadURL + "/<?= echo $this->browser['thumbsDir'] ?>";
+<?php if ( $this->setOpener ): ?>
+browser.opener.name = "<?php echo $this->browser['openerName'] ?>";
 <?php endif; ?>
-<?php if (isset($this->opener['CKEditor']['funcNum']) && preg_match('/^\d+$/', $this->opener['CKEditor']['funcNum'])): ?>
+<?php if ( $this->browser['isOpenedByCk'] ): ?>
 browser.opener.CKEditor = {};
-browser.opener.CKEditor.funcNum = <?php echo $this->opener['CKEditor']['funcNum'] ?>;
+browser.opener.CKEditor.funcNum = <?php echo $this->funcNumCkEditor ?>;
 <?php endif; ?>
-<?php if (isset($this->opener['TinyMCE']) && $this->opener['TinyMCE']): ?>
+<?php if ($this->browser['tinyMCE'] ): ?>
 browser.opener.TinyMCE = true;
 <?php endif; ?>
-browser.cms = "<?php echo Admin_Model_Kclib_Text::jsValue($this->cms) ?>";
-_.kuki.domain = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookieDomain']) ?>";
-_.kuki.path = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePath']) ?>";
-_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ?>";
+browser.cms = "<?=  $this->browser['cms'] ?>";
+_.kuki.domain = "<?=  $this->kuki['domain'] ?>";
+_.kuki.path = "<?=  $this->kuki['path'] ?>";
+_.kuki.prefix = "<?=  $this->kuki['prefix'] ?>";
 $(document).ready(function() {
     browser.resize();
     browser.init();
