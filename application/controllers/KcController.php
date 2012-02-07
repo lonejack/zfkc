@@ -78,6 +78,20 @@ class KcController extends Zend_Controller_Action
 		$this->view->title = 'demo';
 		$locale=new Zend_Locale();
 		$this->view->language = $locale->getLanguage().'-'.$locale->getRegion();
+		if( isset($params['theme']) && file_exists($this->_kcfinderDir."/themes/{$params['theme']}" ) )
+		{
+			$this->view->theme = $params['theme'];				
+		} 
+		else
+		{
+			$this->view->theme = $config->theme;
+		}
+		
+		if( file_exists($this->_kcfinderDir."/themes/{$params['theme']}/init.js" ))
+		{
+			$this->view->init_theme = $this->_kcfinderDir."/themes/{$params['theme']}/init.js";
+		}
+		
 	}
 	
 
