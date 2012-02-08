@@ -17,39 +17,38 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 		$params = $request->getParams();
 		switch($pathex[0])
 		{
-			case 'css.php':
-				if($params['type'] == 'images')
+			case 'getcss.php':
+				switch($params['type'] )
 				{
-					$defaults['action'] = 'getcssimage';
-					return $defaults;
+					default:
+						$defaults['action'] = 'getcssimage';
+						return $defaults;
 				}
 				break;
 			case 'js':
 				break;
 				
-			case 'js_localize.php':
+			case 'localize.php':
 				$defaults['action'] = 'localize';
 				return $defaults;
 			case 'browse.php':
-				$defaults['action'] = 'browse';
+				if(!isset($params['act']) )
+				{
+					$defaults['action'] = 'browse';
+				}
+				else
+				{
+					$defaults['action'] = 'browse'.$params['act'];
+				}
+				break;
 				
-				return $defaults;
+			case 'getjoiner':
+				$defaults['action'] = 'getjoiner';
+				break;
 				
 			default:
 				throw new Zend_Exception('invalid argument in router');
 		}
-		
-		//  /js/
-		switch( $pathex[1] )
-		{
-			case 'browser':
-				if($pathex[2] == 'joiner.php')
-				{
-					$defaults['action'] = 'getjoiner';
-				}
-				break;
-		}
-		
 		return $defaults;
 	}
 	

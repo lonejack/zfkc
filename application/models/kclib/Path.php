@@ -87,8 +87,8 @@ class Application_Model_kclib_Path {
   /** Normalize the given path. On Windows servers backslash will be replaced
     * with slash. Remobes unnecessary doble slashes and double dots. Removes
     * last slash if it exists. Examples:
-    * Admin_Model_Kclib_Path::normalize("C:\\any\\path\\") returns "C:/any/path"
-    * Admin_Model_Kclib_Path::normalize("/your/path/..//home/") returns "/your/home"
+    * Application_Model_kclib_Path::normalize("C:\\any\\path\\") returns "C:/any/path"
+    * Application_Model_kclib_Path::normalize("/your/path/..//home/") returns "/your/home"
     * @param string $path
     * @return string */
 

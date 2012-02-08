@@ -3,6 +3,11 @@
 class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 {
 	protected $_view;
+	
+	protected function _initSession()
+	{
+		Zend_Session::start();
+	}
 	protected function _initDoctype()
 	{
 		$this->bootstrap('view');
@@ -16,8 +21,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 			$front = Zend_Controller_Front::getInstance();
 			$router = $front->getRouter();
 			$incPath = get_include_path();
-			$kcfinder = new My_KcFinder_Router( 'kcfinder', array('controller'=>'Kc'));
-			$router->addRoute('kcfinder', $kcfinder);			
+			$kcfinder = new My_KcFinder_Router( 'js/kcfinder', array('controller'=>'Kc'));
+			$router->addRoute('js/kcfinder', $kcfinder);			
 
 		}
 	

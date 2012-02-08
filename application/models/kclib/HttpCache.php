@@ -19,7 +19,7 @@ class Application_Model_kclib_HttpCache {
   /** Cache a file. The $type parameter might define the MIME type of the file
     * or path to magic file to autodetect the MIME type. If you skip $type
     * parameter the method will try with the default magic file. Autodetection
-    * of MIME type requires Fileinfo PHP extension used in Admin_Model_Kclib_File::getMimeType()
+    * of MIME type requires Fileinfo PHP extension used in Application_Model_kclib_File::getMimeType()
     * @param string $file
     * @param string $type
     * @param integer $expire
@@ -32,7 +32,7 @@ class Application_Model_kclib_HttpCache {
         if ($type === null) {
             $magic = ((substr($type, 0, 1) == "/") || preg_match('/^[a-z]\:/i', $type))
                 ? $type : null;
-            $type = Admin_Model_Kclib_File::getMimeType($file, $magic);
+            $type = Application_Model_kclib_File::getMimeType($file, $magic);
             if (!$type) $type = null;
         }
 

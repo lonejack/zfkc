@@ -20,7 +20,7 @@ class Application_Model_kclib_Dir {
     * @return bool */
 
     static function isWritable($dir) {
-        $dir = Admin_Model_Kclib_Path::normalize($dir);
+        $dir = Application_Model_kclib_Path::normalize($dir);
         if (!is_dir($dir))
             return false;
         $i = 0;

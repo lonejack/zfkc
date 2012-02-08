@@ -189,30 +189,30 @@ class Application_Model_kcUploader {
 		$this->config['uploadURL'], $patt)
 		) {
 			list($unused, $protocol, $domain, $unused, $port, $path) = $patt;
-			$path = Admin_Model_Kclib_Path::normalize($path);
+			$path = Application_Model_kclib_Path::normalize($path);
 			$this->config['uploadURL'] = "$protocol://$domain" . (strlen($port) ? ":$port" : "") . "/$path";
 			$this->config['uploadDir'] = strlen($this->config['uploadDir'])
-			? Admin_Model_Kclib_Path::normalize($this->config['uploadDir'])
-			: Admin_Model_Kclib_Path::url2fullPath("/$path");
+			? Application_Model_kclib_Path::normalize($this->config['uploadDir'])
+			: Application_Model_kclib_Path::url2fullPath("/$path");
 			$this->typeDir = "{$this->config['uploadDir']}/{$this->type}";
 			$this->typeURL = "{$this->config['uploadURL']}/{$this->type}";
 
 			// SITE ROOT
 		} elseif ($this->config['uploadURL'] == "/") {
 			$this->config['uploadDir'] = strlen($this->config['uploadDir'])
-			? Admin_Model_Kclib_Path::normalize($this->config['uploadDir'])
-			: Admin_Model_Kclib_Path::normalize($_SERVER['DOCUMENT_ROOT']);
+			? Application_Model_kclib_Path::normalize($this->config['uploadDir'])
+			: Application_Model_kclib_Path::normalize($_SERVER['DOCUMENT_ROOT']);
 			$this->typeDir = "{$this->config['uploadDir']}/{$this->type}";
 			$this->typeURL = "/{$this->type}";
 
 			// ABSOLUTE & RELATIVE
 		} else {
 			$this->config['uploadURL'] = (substr($this->config['uploadURL'], 0, 1) === "/")
-			? Admin_Model_Kclib_Path::normalize($this->config['uploadURL'])
-			: Admin_Model_Kclib_Path::rel2abs_url($this->config['uploadURL']);
+			? Application_Model_kclib_Path::normalize($this->config['uploadURL'])
+			: Application_Model_kclib_Path::rel2abs_url($this->config['uploadURL']);
 			$this->config['uploadDir'] = strlen($this->config['uploadDir'])
-			? Admin_Model_Kclib_Path::normalize($this->config['uploadDir'])
-			: Admin_Model_Kclib_Path::url2fullPath($this->config['uploadURL']);
+			? Application_Model_kclib_Path::normalize($this->config['uploadDir'])
+			: Application_Model_kclib_Path::url2fullPath($this->config['uploadURL']);
 			$this->typeDir = "{$this->config['uploadDir']}/{$this->type}";
 			$this->typeURL = "{$this->config['uploadURL']}/{$this->type}";
 		}
@@ -283,7 +283,7 @@ class Application_Model_kcUploader {
 			if (isset($this->get['dir']) &&
 			(false !== ($gdir = $this->checkInputDir($this->get['dir'])))
 			) {
-				$udir = Admin_Model_Kclib_Path::normalize("$dir$gdir");
+				$udir = Application_Model_kclib_Path::normalize("$dir$gdir");
 				if (substr($udir, 0, strlen($dir)) !== $dir)
 				$message = $this->label("Unknown error.");
 				else {
@@ -294,11 +294,11 @@ class Application_Model_kcUploader {
 			}
 
 			if (!strlen($message)) {
-				if (!is_dir(Admin_Model_Kclib_Path::normalize($dir)))
-				@mkdir(Admin_Model_Kclib_Path::normalize($dir), $this->config['dirPerms'], true);
+				if (!is_dir(Application_Model_kclib_Path::normalize($dir)))
+				@mkdir(Application_Model_kclib_Path::normalize($dir), $this->config['dirPerms'], true);
 
 				$filename = $this->normalizeFilename($file['name']);
-				$target = Admin_Model_Kclib_File::getInexistantFilename($dir . $filename);
+				$target = Application_Model_kclib_File::getInexistantFilename($dir . $filename);
 
 				if (!@move_uploaded_file($file['tmp_name'], $target) &&
 				!@rename($file['tmp_name'], $target) &&
@@ -315,9 +315,9 @@ class Application_Model_kcUploader {
 					if (preg_match('/^([a-z]+)\:\/\/([^\/^\:]+)(\:(\d+))?\/(.+)$/', $url, $patt)) {
 						list($unused, $protocol, $domain, $unused, $port, $path) = $patt;
 						$base = "$protocol://$domain" . (strlen($port) ? ":$port" : "") . "/";
-						$url = $base . Admin_Model_Kclib_Path::urlPathEncode($path);
+						$url = $base . Application_Model_kclib_Path::urlPathEncode($path);
 					} else
-					$url = Admin_Model_Kclib_Path::urlPathEncode($url);
+					$url = Application_Model_kclib_Path::urlPathEncode($url);
 				}
 			}
 		}
@@ -369,8 +369,8 @@ class Application_Model_kcUploader {
 			return true;
 		}
 
-		$extension = Admin_Model_Kclib_File::getExtension($file['name']);
-		$typePatt = strtolower(Admin_Model_Kclib_Text::clearWhitespaces($this->types[$this->type]));
+		$extension = Application_Model_kclib_File::getExtension($file['name']);
+		$typePatt = strtolower(Application_Model_kclib_Text::clearWhitespaces($this->types[$this->type]));
 
 		// CHECK FOR UPLOAD ERRORS
 		if ($file['error'])
@@ -418,7 +418,7 @@ class Application_Model_kcUploader {
 		}
 
 		// IMAGE RESIZE
-		$gd = new Admin_Model_Kclib_Gd($file['tmp_name']);
+		$gd = new Application_Model_kclib_Gd($file['tmp_name']);
 		if (!$gd->init_error && !$this->imageResize($gd, $file['tmp_name']))
 		return $this->label("The image is too big and/or cannot be resized.");
 
@@ -426,7 +426,7 @@ class Application_Model_kcUploader {
 	}
 
 	protected function checkInputDir($dir, $inclType=true, $existing=true) {
-		$dir = Admin_Model_Kclib_Path::normalize($dir);
+		$dir = Application_Model_kclib_Path::normalize($dir);
 		if (substr($dir, 0, 1) == "/")
 		$dir = substr($dir, 1);
 
@@ -456,7 +456,7 @@ class Application_Model_kcUploader {
 		if (!isset($this->types[$type]))
 		return false;
 
-		$exts = strtolower(Admin_Model_Kclib_Text::clearWhitespaces($this->config['deniedExts']));
+		$exts = strtolower(Application_Model_kclib_Text::clearWhitespaces($this->config['deniedExts']));
 		if (strlen($exts)) {
 			$exts = explode(" ", $exts);
 			if (in_array($ext, $exts))
@@ -488,7 +488,7 @@ class Application_Model_kcUploader {
 
 	protected function imageResize($image, $file=null) {
 		if (!($image instanceof gd)) {
-			$gd = new Admin_Model_Kclib_Gd($image);
+			$gd = new Application_Model_kclib_Gd($image);
 			if ($gd->init_error) return false;
 			$file = $image;
 		} elseif ($file === null)
@@ -528,7 +528,7 @@ class Application_Model_kcUploader {
 	}
 
 	protected function makeThumb($file, $overwrite=true) {
-		$gd = new Admin_Model_Kclib_Gd($file);
+		$gd = new Application_Model_kclib_Gd($file);
 
 		// Drop files which are not GD handled images
 		if ($gd->init_error)
@@ -536,7 +536,7 @@ class Application_Model_kcUploader {
 
 		$thumb = substr($file, strlen($this->config['uploadDir']));
 		$thumb = $this->config['uploadDir'] . "/" . $this->config['thumbsDir'] . "/" . $thumb;
-		$thumb = Admin_Model_Kclib_Path::normalize($thumb);
+		$thumb = Application_Model_kclib_Path::normalize($thumb);
 		$thumbDir = dirname($thumb);
 		if (!is_dir($thumbDir) && !@mkdir($thumbDir, $this->config['dirPerms'], true))
 		return false;
@@ -597,7 +597,7 @@ class Application_Model_kcUploader {
 	}
 
 	protected function callBack($url, $message="") {
-		$message = Admin_Model_Kclib_Text::jsValue($message);
+		$message = Application_Model_kclib_Text::jsValue($message);
 		$CKfuncNum = isset($this->opener['CKEditor']['funcNum'])
 		? $this->opener['CKEditor']['funcNum'] : 0;
 		if (!$CKfuncNum) $CKfuncNum = 0;

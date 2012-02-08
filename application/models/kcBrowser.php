@@ -1,8 +1,10 @@
 <?php
-class Application_Model_kcBrowser extends Admin_Model_kcUploader {
+class Application_Model_kcBrowser extends Application_Model_kcUploader {
 	const		KC_DIE = 0;
 	const		KC_OK  = 1;
 	const		KC_BROWSER_OK  = 2;
+	
+	const      THUMBS_DIR = '.thumbs';
 	
 	protected $action;
 	protected $thumbsDir;
@@ -43,7 +45,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		) ||
 
 		!is_readable($thumbsDir) ||
-		!Admin_Model_Kclib_Dir::isWritable($thumbsDir) ||
+		!Application_Model_kclib_Dir::isWritable($thumbsDir) ||
 		(
 		!is_dir("$thumbsDir/{$this->type}") &&
 		!@mkdir("$thumbsDir/{$this->type}", $this->config['dirPerms'])
@@ -55,7 +57,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		$this->thumbsTypeDir = "$thumbsDir/{$this->type}";
 
 		// Remove temporary zip downloads if exists
-		$files = Admin_Model_Kclib_Dir::content($this->config['uploadDir'], array(
+		$files = Application_Model_kclib_Dir::content($this->config['uploadDir'], array(
 	            'types' => "file",
 	            'pattern' => '/^.*\.zip$/i'
 		));
@@ -104,7 +106,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			if (($type != $this->type) || !is_dir($dir) || !is_readable($dir))
 			$this->session['dir'] = $this->type;
 		}
-		$this->session['dir'] = Admin_Model_Kclib_Path::normalize($this->session['dir']);
+		$this->session['dir'] = Application_Model_kclib_Path::normalize($this->session['dir']);
 
 		if ($act == "browser") {
 			$this->_headerAnswer[] ="X-UA-Compatible: chrome=1";
@@ -131,24 +133,24 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		is_dir("{$this->typeDir}/{$this->get['dir']}") &&
 		is_readable("{$this->typeDir}/{$this->get['dir']}")
 		)
-		$this->session['dir'] = Admin_Model_Kclib_Path::normalize("{$this->type}/{$this->get['dir']}");
+		$this->session['dir'] = Application_Model_kclib_Path::normalize("{$this->type}/{$this->get['dir']}");
 
 		return self::KC_BROWSER_OK;//return $this->output();
 	}
 
-	protected function act_init() {
-		$tree = $this->getDirInfo($this->typeDir);
-		$tree['dirs'] = $this->getTree($this->session['dir']);
+	static function act_init($typeDir,$sessionDir,$uploadDir) {
+		$tree = self::getDirInfo($typeDir,$sessionDir,$uploadDir);
+		$tree['dirs'] = self::getTree($sessionDir,$uploadDir);
 		if (!is_array($tree['dirs']) || !count($tree['dirs']))
 		unset($tree['dirs']);
-		$files = $this->getFiles($this->session['dir']);
-		$dirWritable = Admin_Model_Kclib_Dir::isWritable("{$this->config['uploadDir']}/{$this->session['dir']}");
+		$files = self::getFiles($sessionDir,$uploadDir);
+		$dirWritable = Application_Model_kclib_Dir::isWritable("$uploadDir/$sessionDir");
 		$data = array(
 	            'tree' => &$tree,
 	            'files' => &$files,
 	            'dirWritable' => $dirWritable
 		);
-		return json_encode($data);
+		return $data;
 	}
 
 	protected function act_thumb() {
@@ -163,7 +165,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			$file = "{$this->config['uploadDir']}/{$this->type}/{$this->get['dir']}/" . basename($file);
 			if (!is_file($file) || !is_readable($file))
 			$this->sendDefaultThumb($file);
-			$image = new Admin_Model_Kclib_Gd($file);
+			$image = new Application_Model_kclib_Gd($file);
 			if ($image->init_error)
 			$this->sendDefaultThumb($file);
 			$browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
@@ -175,11 +177,11 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 				($image->type == IMAGETYPE_GIF) ? "gif" : (
 				($image->type == IMAGETYPE_PNG) ? "png" : "jpeg");
 				$type = "image/$type";
-				Admin_Model_Kclib_HttpCache::file($file, $type);
+				Application_Model_kclib_HttpCache::file($file, $type);
 			} else
 			$this->sendDefaultThumb($file);
 		}
-		Admin_Model_Kclib_HttpCache::file($file, "image/jpeg");
+		Application_Model_kclib_HttpCache::file($file, "image/jpeg");
 	}
 
 	protected function act_expand() {
@@ -189,7 +191,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 	protected function act_chDir() {
 		$this->postDir(); // Just for existing check
 		$this->session['dir'] = $this->type . "/" . $this->post['dir'];
-		$dirWritable = Admin_Model_Kclib_Dir::isWritable("{$this->config['uploadDir']}/{$this->session['dir']}");
+		$dirWritable = Application_Model_kclib_Dir::isWritable("{$this->config['uploadDir']}/{$this->session['dir']}");
 		return json_encode(array(
 	            'files' => $this->getFiles($this->session['dir']),
 	            'dirWritable' => $dirWritable
@@ -250,14 +252,14 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$dir = $this->postDir();
 
-		if (!Admin_Model_Kclib_Dir::isWritable($dir))
+		if (!Application_Model_kclib_Dir::isWritable($dir))
 		$this->errorMsg("Cannot delete the folder.");
-		$result = !Admin_Model_Kclib_Dir::prune($dir, false);
+		$result = !Application_Model_kclib_Dir::prune($dir, false);
 		if (is_array($result) && count($result))
 		$this->errorMsg("Failed to delete {count} files/folders.",
 		array('count' => count($result)));
 		$thumbDir = "$this->thumbsTypeDir/{$this->post['dir']}";
-		if (is_dir($thumbDir)) Admin_Model_Kclib_Dir::prune($thumbDir);
+		if (is_dir($thumbDir)) Application_Model_kclib_Dir::prune($thumbDir);
 		return true;
 	}
 
@@ -269,7 +271,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$dir = $this->postDir();
 
-		if (!Admin_Model_Kclib_Dir::isWritable($dir))
+		if (!Application_Model_kclib_Dir::isWritable($dir))
 		$this->errorMsg("Cannot access or write to upload folder.");
 
 		if (is_array($this->file['name'])) {
@@ -314,14 +316,14 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		!isset($this->post['file']) ||
 		!isset($this->post['newName']) ||
 		(false === ($file = "$dir/{$this->post['file']}")) ||
-		!file_exists($file) || !is_readable($file) || !Admin_Model_Kclib_File::isWritable($file)
+		!file_exists($file) || !is_readable($file) || !Application_Model_kclib_File::isWritable($file)
 		)
 		$this->errorMsg("Unknown error.");
 
 		if (isset($this->config['denyExtensionRename']) &&
 		$this->config['denyExtensionRename'] &&
-		(Admin_Model_Kclib_File::getExtension($this->post['file'], true) !==
-		Admin_Model_Kclib_File::getExtension($this->post['newName'], true)
+		(Application_Model_kclib_File::getExtension($this->post['file'], true) !==
+		Application_Model_kclib_File::getExtension($this->post['newName'], true)
 		)
 		)
 		$this->errorMsg("You cannot rename the extension of files!");
@@ -336,7 +338,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		$newName = "$dir/$newName";
 		if (file_exists($newName))
 		$this->errorMsg("A file or folder with that name already exists.");
-		$ext = Admin_Model_Kclib_File::getExtension($newName);
+		$ext = Application_Model_kclib_File::getExtension($newName);
 		if (!$this->validateExtension($ext, $this->type))
 		$this->errorMsg("Denied file extension.");
 		if (!@rename($file, $newName))
@@ -356,7 +358,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		!isset($this->post['dir']) ||
 		!isset($this->post['file']) ||
 		(false === ($file = "$dir/{$this->post['file']}")) ||
-		!file_exists($file) || !is_readable($file) || !Admin_Model_Kclib_File::isWritable($file) ||
+		!file_exists($file) || !is_readable($file) || !Application_Model_kclib_File::isWritable($file) ||
 		!@unlink($file)
 		)
 		$this->errorMsg("Unknown error.");
@@ -370,7 +372,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		$dir = $this->postDir();
 		if (!$this->config['access']['files']['copy'] ||
 		!isset($this->post['dir']) ||
-		!is_dir($dir) || !is_readable($dir) || !Admin_Model_Kclib_Dir::isWritable($dir) ||
+		!is_dir($dir) || !is_readable($dir) || !Application_Model_kclib_Dir::isWritable($dir) ||
 		!isset($this->post['files']) || !is_array($this->post['files']) ||
 		!count($this->post['files'])
 		)
@@ -378,7 +380,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$error = array();
 		foreach($this->post['files'] as $file) {
-			$file = Admin_Model_Kclib_Path::normalize($file);
+			$file = Application_Model_kclib_Path::normalize($file);
 			if (substr($file, 0, 1) == ".") continue;
 			$type = explode("/", $file);
 			$type = $type[0];
@@ -386,7 +388,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			$path = "{$this->config['uploadDir']}/$file";
 			$base = basename($file);
 			$replace = array('file' => $base);
-			$ext = Admin_Model_Kclib_File::getExtension($base);
+			$ext = Application_Model_kclib_File::getExtension($base);
 			if (!file_exists($path))
 			$error[] = $this->label("The file '{file}' does not exist.", $replace);
 			elseif (substr($base, 0, 1) == ".")
@@ -421,7 +423,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		$dir = $this->postDir();
 		if (!$this->config['access']['files']['move'] ||
 		!isset($this->post['dir']) ||
-		!is_dir($dir) || !is_readable($dir) || !Admin_Model_Kclib_Dir::isWritable($dir) ||
+		!is_dir($dir) || !is_readable($dir) || !Application_Model_kclib_Dir::isWritable($dir) ||
 		!isset($this->post['files']) || !is_array($this->post['files']) ||
 		!count($this->post['files'])
 		)
@@ -429,7 +431,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$error = array();
 		foreach($this->post['files'] as $file) {
-			$file = Admin_Model_Kclib_Path::normalize($file);
+			$file = Application_Model_kclib_Path::normalize($file);
 			if (substr($file, 0, 1) == ".") continue;
 			$type = explode("/", $file);
 			$type = $type[0];
@@ -437,7 +439,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			$path = "{$this->config['uploadDir']}/$file";
 			$base = basename($file);
 			$replace = array('file' => $base);
-			$ext = Admin_Model_Kclib_File::getExtension($base);
+			$ext = Application_Model_kclib_File::getExtension($base);
 			if (!file_exists($path))
 			$error[] = $this->label("The file '{file}' does not exist.", $replace);
 			elseif (substr($base, 0, 1) == ".")
@@ -448,7 +450,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			$error[] = "$base: " . $this->label("A file or folder with that name already exists.");
 			elseif (!is_readable($path) || !is_file($path))
 			$error[] = $this->label("Cannot read '{file}'.", $replace);
-			elseif (!Admin_Model_Kclib_File::isWritable($path) || !@rename($path, "$dir/$base"))
+			elseif (!Application_Model_kclib_File::isWritable($path) || !@rename($path, "$dir/$base"))
 			$error[] = $this->label("Cannot move '{file}'.", $replace);
 			else {
 				if (function_exists("chmod"))
@@ -478,7 +480,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$error = array();
 		foreach($this->post['files'] as $file) {
-			$file = Admin_Model_Kclib_Path::normalize($file);
+			$file = Application_Model_kclib_Path::normalize($file);
 			if (substr($file, 0, 1) == ".") continue;
 			$type = explode("/", $file);
 			$type = $type[0];
@@ -509,7 +511,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			$file = md5(time() . session_id());
 			$file = "{$this->config['uploadDir']}/$file.zip";
 		} while (file_exists($file));
-		new Admin_Model_Kclib_ZipFolder($file, $dir);
+		new Application_Model_kclib_ZipFolder($file, $dir);
 		header("Content-Type: application/x-zip");
 		header('Content-Disposition: attachment; filename="' . str_replace('"', "_", $filename) . '"');
 		header("Content-Length: " . filesize($file));
@@ -529,7 +531,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$zipFiles = array();
 		foreach ($this->post['files'] as $file) {
-			$file = Admin_Model_Kclib_Path::normalize($file);
+			$file = Application_Model_kclib_Path::normalize($file);
 			if ((substr($file, 0, 1) == ".") || (strpos($file, '/') !== false))
 			continue;
 			$file = "$dir/$file";
@@ -567,7 +569,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 		$zipFiles = array();
 		foreach ($this->post['files'] as $file) {
-			$file = Admin_Model_Kclib_Path::normalize($file);
+			$file = Application_Model_kclib_Path::normalize($file);
 			if ((substr($file, 0, 1) == "."))
 			continue;
 			$type = explode("/", $file);
@@ -687,7 +689,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		}
 
 		$filename = $this->normalizeFilename($file['name']);
-		$target = "$dir/" . Admin_Model_Kclib_File::getInexistantFilename($filename, $dir);
+		$target = "$dir/" . Application_Model_kclib_File::getInexistantFilename($filename, $dir);
 
 		if (!@move_uploaded_file($file['tmp_name'], $target) &&
 		!@rename($file['tmp_name'], $target) &&
@@ -704,7 +706,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 
 	protected function sendDefaultThumb($file=null) {
 		if ($file !== null) {
-			$ext = Admin_Model_Kclib_File::getExtension($file);
+			$ext = Application_Model_kclib_File::getExtension($file);
 			$thumb = "themes/{$this->config['theme']}/img/files/big/$ext.png";
 		}
 		if (!isset($thumb) || !file_exists($thumb))
@@ -714,11 +716,12 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		die;
 	}
 
-	protected function getFiles($dir) {
-		$thumbDir = "{$this->config['uploadDir']}/{$this->config['thumbsDir']}/$dir";
-		$dir = "{$this->config['uploadDir']}/$dir";
+	protected function getFiles($dir,$uploadDir) {
+		
+		$thumbDir = "$uploadDir/".self::THUMBS_DIR."/$dir";
+		$dir = "$uploadDir/$dir";
 		$return = array();
-		$files = Admin_Model_Kclib_Dir::content($dir, array('types' => "file"));
+		$files = Application_Model_kclib_Dir::content($dir, array('types' => "file"));
 		if ($files === false)
 		return $return;
 
@@ -738,7 +741,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 			$stat = stat($file);
 			if ($stat === false) continue;
 			$name = basename($file);
-			$ext = Admin_Model_Kclib_File::getExtension($file);
+			$ext = Application_Model_kclib_File::getExtension($file);
 			$bigIcon = file_exists("themes/{$this->config['theme']}/img/files/big/$ext.png");
 			$smallIcon = file_exists("themes/{$this->config['theme']}/img/files/small/$ext.png");
 			$thumb = file_exists("$thumbDir/$name");
@@ -748,7 +751,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		'mtime' => $stat['mtime'],
 		'date' => @strftime($this->dateTimeSmall, $stat['mtime']),
 		'readable' => is_readable($file),
-	                'writable' => Admin_Model_Kclib_File::isWritable($file),
+	                'writable' => Application_Model_kclib_File::isWritable($file),
 		'bigIcon' => $bigIcon,
 		'smallIcon' => $smallIcon,
 		'thumb' => $thumb,
@@ -758,7 +761,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		return $return;
 	}
 
-	protected function getTree($dir, $index=0) {
+	static function getTree($dir, &$uploadDir, $index=0) {
 		$path = explode("/", $dir);
 
 		$pdir = "";
@@ -767,9 +770,9 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		if (strlen($pdir))
 		$pdir = substr($pdir, 1);
 
-		$fdir = "{$this->config['uploadDir']}/$pdir";
+		$fdir = "$uploadDir/$pdir";
 
-		$dirs = $this->getDirs($fdir);
+		$dirs = self::getDirs($fdir,$uploadDir,$uploadDir);
 
 		if (is_array($dirs) && count($dirs) && ($index <= count($path) - 1)) {
 
@@ -780,7 +783,7 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 				($cdir['name'] == $path[$index + 1])
 				)
 				) {
-					$dirs[$i]['dirs'] = $this->getTree($dir, $index + 1);
+					$dirs[$i]['dirs'] = self::getTree($dir,$uploadDir, $index + 1);
 					if (!is_array($dirs[$i]['dirs']) || !count($dirs[$i]['dirs'])) {
 						unset($dirs[$i]['dirs']);
 						continue;
@@ -811,13 +814,13 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		return $dir;
 	}
 
-	protected function getDirs($dir) {
-		$dirs = Admin_Model_Kclib_Dir::content($dir, array('types' => "dir"));
+	protected function getDirs($dir, $sessionDir,$uploadDir) {
+		$dirs = Application_Model_kclib_Dir::content($dir, array('types' => "dir"));
 		$return = array();
 		if (is_array($dirs)) {
-			$writable = Admin_Model_Kclib_Dir::isWritable($dir);
+			$writable = Application_Model_kclib_Dir::isWritable($dir);
 			foreach ($dirs as $cdir) {
-				$info = $this->getDirInfo($cdir);
+				$info = self::getDirInfo($cdir, $sessionDir,$uploadDir);
 				if ($info === false) continue;
 				$info['removable'] = $writable && $info['writable'];
 				$return[] = $info;
@@ -826,10 +829,10 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		return $return;
 	}
 
-	protected function getDirInfo($dir, $removable=false) {
+	static function getDirInfo($dir, $sessionDir,$uploadDir, $removable=false) {
 		if ((substr(basename($dir), 0, 1) == ".") || !is_dir($dir) || !is_readable($dir))
 		return false;
-		$dirs = Admin_Model_Kclib_Dir::content($dir, array('types' => "dir"));
+		$dirs = Application_Model_kclib_Dir::content($dir, array('types' => "dir"));
 		if (is_array($dirs)) {
 			foreach ($dirs as $key => $cdir)
 			if (substr(basename($cdir), 0, 1) == ".")
@@ -838,16 +841,16 @@ class Application_Model_kcBrowser extends Admin_Model_kcUploader {
 		} else
 		$hasDirs = false;
 
-		$writable = Admin_Model_Kclib_Dir::isWritable($dir);
+		$writable = Application_Model_kclib_Dir::isWritable($dir);
 		$info = array(
 	'name' => stripslashes(basename($dir)),
 	'readable' => is_readable($dir),
 	'writable' => $writable,
-	            'removable' => $removable && $writable && Admin_Model_Kclib_Dir::isWritable(dirname($dir)),
+	            'removable' => $removable && $writable && Application_Model_kclib_Dir::isWritable(dirname($dir)),
 	'hasDirs' => $hasDirs
 		);
 
-		if ($dir == "{$this->config['uploadDir']}/{$this->session['dir']}")
+		if ($dir == "$uploadDir/$sessionDir")
 		$info['current'] = true;
 
 		return $info;

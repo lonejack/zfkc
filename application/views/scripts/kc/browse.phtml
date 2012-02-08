@@ -2,27 +2,24 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>KCFinder: /<?php echo $this->session['dir'] ?></title>
-<!--  php INCLUDE "$template_dir-tpl_css.php"   -->
-<!-- 
-<link href="css.php?type=<?php echo $this->type ?>" rel="stylesheet" type="text/css" />
-<link href="themes/<?php echo $this->config['theme'] ?>/style.css" rel="stylesheet" type="text/css" />
- -->
-<!--  php INCLUDE "$template_dir-tpl_javascript.php"   -->
 
+<link href="<?=$this->publicPath?>getcss.php?type=<?=$this->type ?>" rel="stylesheet" type="text/css" />
+<link href="<?=$this->publicPath?>themes/<?=$this->browser['theme']?>/style.css" rel="stylesheet" type="text/css" />
 <script src="<?=$this->publicPath?>js/jquery.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.rightClick.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.drag.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/helper.js" type="text/javascript"></script>
-<!-- 
-<script src="js/browser/joiner.php" type="text/javascript"></script>
-<//script src="js_localize.php?lng=<?php echo $this->lang ?>" type="text/javascript"></script>
-<?php if (isset($this->opener['TinyMCE']) && $this->opener['TinyMCE']): ?>
+<script src="<?=$this->publicPath?>getjoiner" type="text/javascript"></script>
+<script src="<?=$this->publicPath?>localize.php?lng=<?php echo $this->language ?>" type="text/javascript"></script>
+
+
+<?php if (isset($this->browser['tinyMCE']) ): ?>
 <script src="<?= $this->tinyMCEPath ?>/tiny_mce_popup.js" type="text/javascript"></script>
 <?php endif; ?>
-<?php if (file_exists("themes/{$this->config['theme']}/init.js")): ?>
-<script src="themes/<?php echo $this->config['theme'] ?>/init.js" type="text/javascript"></script>
+<?php if (isset($this->init_theme)): ?>
+<script src="<?=$this->publicPath?><?=$this->init_theme ?>" type="text/javascript"></script>
 <?php endif; ?>
- -->
+
 <script type="text/javascript">
 browser.version = "<?=$this->browser['version'] ?>";
 browser.support.chromeFrame = <?=$this->browser['cromeFrame'] ?>;
@@ -68,6 +65,7 @@ $('body').noContext();
 <div id="dialog"></div>
 <div id="alert"></div>
 <div id="clipboard"></div>
+
 <div id="all">
 <div id="left">
     <div id="folders"></div>
@@ -131,10 +129,11 @@ $('body').noContext();
 
     </div>
     <div id="files">
-        <div id="content"></div>
+    <div id="content"></div>
     </div>
 </div>
 <div id="status"><span id="fileinfo">&nbsp;</span></div>
 </div>
+
 </body>
 </html>

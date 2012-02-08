@@ -106,7 +106,7 @@ class Application_Model_kclib_File {
     * @return bool */
 
     static function isWritable($filename) {
-        $filename = Admin_Model_Kclib_Path::normalize($filename);
+        $filename = Application_Model_kclib_Path::normalize($filename);
         if (!is_file($filename) || (false === ($fp = @fopen($filename, 'a+'))))
             return false;
         fclose($fp);
@@ -155,14 +155,14 @@ class Application_Model_kclib_File {
     * defines the template, the filename will be renamed to. Default template
     * is {name}({sufix}){ext}. Examples:
     *
-    *   Admin_Model_Kclib_File::getInexistantFilename("/my/directory/myfile.txt");
+    *   Application_Model_kclib_File::getInexistantFilename("/my/directory/myfile.txt");
     *   If myfile.txt does not exist - returns the same path to the file
     *   otherwise returns "/my/directory/myfile(1).txt"
     *
-    *   Admin_Model_Kclib_File::getInexistantFilename("myfile.txt", "/my/directory");
+    *   Application_Model_kclib_File::getInexistantFilename("myfile.txt", "/my/directory");
     *   returns "myfile.txt" or "myfile(1).txt" or "myfile(2).txt" etc...
     *
-    *   Admin_Model_Kclib_File::getInexistantFilename("myfile.txt", "/dir", "{name}[{sufix}]{ext}");
+    *   Application_Model_kclib_File::getInexistantFilename("myfile.txt", "/dir", "{name}[{sufix}]{ext}");
     *   returns "myfile.txt" or "myfile[1].txt" or "myfile[2].txt" etc...
     *
     * @param string $filename
@@ -174,12 +174,12 @@ class Application_Model_kclib_File {
         if ($tpl === null)  $tpl = "{name}({sufix}){ext}";
         $fullPath = ($dir === null);
         if ($fullPath)
-            $dir = Admin_Model_Kclib_Path::normalize(dirname($filename));
+            $dir = Application_Model_kclib_Path::normalize(dirname($filename));
         else {
             $fdir = dirname($filename);
             $dir = strlen($fdir)
-                ? Admin_Model_Kclib_Path::normalize("$dir/$fdir")
-                : Admin_Model_Kclib_Path::normalize($dir);
+                ? Application_Model_kclib_Path::normalize("$dir/$fdir")
+                : Application_Model_kclib_Path::normalize($dir);
         }
         $filename = basename($filename);
         $ext = self::getExtension($filename, false);
