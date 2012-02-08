@@ -4,11 +4,14 @@ class KcController extends Zend_Controller_Action
 {
 	const	DIRECTORY_LANGUAGES	= 'kcLanguages';		
 	protected $_kcfinderDir;
+	protected $_realpath;
 	
 	public function init()
 	{
 		/* Initialize action controller here */
-		$this->_kcfinderDir = PUBLIC_PATH.'/js/kcfinder';
+		$this->_config = new Zend_Config_Ini(APPLICATION_PATH.'/configs/KcConfig.ini', 'browser' );
+		$this->_realpath = PUBLIC_PATH.'/'.$this->_config->publicPath;
+		
 	}
 
 	public function indexAction()
@@ -29,7 +32,7 @@ class KcController extends Zend_Controller_Action
 	
 	public function getjoinerAction()
 	{
-		$this->view->files = Application_Model_kclib_Dir::content($this->_kcfinderDir."/js/browser", array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
+		$this->view->files = Application_Model_kclib_Dir::content($this->_realpath."/js/browser", array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
 		foreach ($this->view->files as $file) {
 			$fmtime = filemtime($file);
 			if (!isset($mtime) || ($fmtime > $mtime))
@@ -70,26 +73,26 @@ class KcController extends Zend_Controller_Action
 	{
 		$request = $this->getRequest();
 		$params = $request->getParams();  
-		$config = new Zend_Config_Ini(APPLICATION_PATH.'/configs/KcConfig.ini', 'browser' );
-		if( isset($config->session) )
+		
+		if( isset($this->_config->session) )
 		{
-			Zend_Session::setOptions($config->session->toArray());
+			Zend_Session::setOptions($this->_config->session->toArray());
 		}
 		$this->view->title = 'demo';
 		$locale=new Zend_Locale();
 		$this->view->language = $locale->getLanguage().'-'.$locale->getRegion();
-		if( isset($params['theme']) && file_exists($this->_kcfinderDir."/themes/{$params['theme']}" ) )
+		if( isset($params['theme']) && file_exists($this->_realpath."/themes/{$params['theme']}" ) )
 		{
 			$theme = $params['theme'];				
 		} 
 		else
 		{
-			$theme = $config->theme;
+			$theme = $this->_config->theme;
 		}
 		
-		if( file_exists($this->_kcfinderDir."/themes/{$theme}/init.js" ))
+		if( file_exists($this->_realpath."/themes/{$theme}/init.js" ))
 		{
-			$this->view->init_theme = $this->_kcfinderDir."/themes/{$theme}/init.js";
+			$this->view->init_theme = $this->_realpath."/themes/{$theme}/init.js";
 		}
 		
 		$browser = array();
@@ -98,15 +101,15 @@ class KcController extends Zend_Controller_Action
 		$browser['version'] = '2.51';
 		$browser['tinyMCE'] = false;
 		$browser['tinyMCEpath'] = null;
-		$browser['cromeFrame'] = false;
-		$browser['supportZip'] = false; //class_exists('ZipArchive') && !$this->config['denyZipDownload']) ? "true" : "false"
-		$browser['check4Update'] = false; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
+		$browser['cromeFrame'] = 'false';
+		$browser['supportZip'] = 'false'; //class_exists('ZipArchive') && !$this->config['denyZipDownload']) ? "true" : "false"
+		$browser['check4Update'] = 'false'; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
 		$browser['type'] = 'images';
-		$browser['access'] = json_encode($config->access);
+		$browser['access'] = json_encode($this->_config->access);
 		$kcsession = Zend_Session::namespaceGet('KcFinder');
 		$browser['dir'] = 'images/public';//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
-		$browser['uploadURL'] = $config->uploadURL;
-		$browser['thumbsDir'] = $config->thumbsDir;
+		$browser['uploadURL'] = $this->_config->uploadURL;
+		$browser['thumbsDir'] = $this->_config->thumbsDir;
 		$browser['setOpener'] = false;
 		$browser['openerName'] = '';
 		$browser['isOpenedByCk'] = false; //isset($this->opener['CKEditor']['funcNum']) && preg_match('/^\d+$/', $this->opener['CKEditor']['funcNum'])
@@ -121,6 +124,7 @@ class KcController extends Zend_Controller_Action
 		$kuki['prefix'] = 'KCFINDER_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
+		$this->view->publicPath = 'http://zfkc.local/'.$this->_config->publicPath;
 		
 	}
 	
