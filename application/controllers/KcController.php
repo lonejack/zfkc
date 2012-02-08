@@ -32,7 +32,9 @@ class KcController extends Zend_Controller_Action
 	public function getcssimageAction()
 	{
 		$mtime = @filemtime(__FILE__);
-		$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
+		$headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
+		$headers[] = header("Content-Type: text/css");
+		$this->view->headers = $headers;  
 		$this->view->thumbWidth = 100;
 		$this->view->thumbHeight = 100;
 	}
