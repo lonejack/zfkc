@@ -38,7 +38,17 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 				}
 				else
 				{
-					$defaults['action'] = 'browse'.$params['act'];
+					$jump = array(
+						'chDir'		=> 'chdir',
+						'init'		=> 'browseinit'
+					);
+					
+					if( array_key_exists($params['act'], $jump) )
+					{
+						$defaults['action'] = $jump[$params['act']];
+							
+					}
+					
 				}
 				break;
 				

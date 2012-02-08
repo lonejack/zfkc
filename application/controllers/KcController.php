@@ -152,7 +152,7 @@ class KcController extends Zend_Controller_Action
 		$this->view->data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir(), $uploadDir);
 	}
 	
-	public function browsechdirAction()
+	public function chdirAction()
 	{
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir', trim($this->_config->imagesDir,'/'));
@@ -171,7 +171,7 @@ class KcController extends Zend_Controller_Action
 	
 	protected function setSessionDir($dir){
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
-		$zf_kceditor->sessionDir = dir;
+		$zf_kceditor->sessionDir = $dir;
 	}
 
 }
