@@ -128,7 +128,7 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		: $return;
 	}
 
-	protected function act_browser() {
+	static function act_browser() {
 		if (isset($this->get['dir']) &&
 		is_dir("{$this->typeDir}/{$this->get['dir']}") &&
 		is_readable("{$this->typeDir}/{$this->get['dir']}")
@@ -716,7 +716,7 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		die;
 	}
 
-	protected function getFiles($dir,$uploadDir) {
+	static function getFiles($dir,$uploadDir) {
 		
 		$thumbDir = "$uploadDir/".self::THUMBS_DIR."/$dir";
 		$dir = "$uploadDir/$dir";
@@ -814,7 +814,7 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		return $dir;
 	}
 
-	protected function getDirs($dir, $sessionDir,$uploadDir) {
+	static function getDirs($dir, $sessionDir,$uploadDir) {
 		$dirs = Application_Model_kclib_Dir::content($dir, array('types' => "dir"));
 		$return = array();
 		if (is_array($dirs)) {

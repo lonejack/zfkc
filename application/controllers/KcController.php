@@ -11,8 +11,9 @@ class KcController extends Zend_Controller_Action
 	public function init()
 	{
 		/* Initialize action controller here */
-		$this->_config = new Zend_Config_Ini(APPLICATION_PATH.'/configs/KcConfig.ini', 'browser' );
-		$this->_realpath = PUBLIC_PATH.'/'.$this->_config->publicPath;
+		
+		$this->_config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
+		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->publicPath);
 		$this->_uploadDir = PUBLIC_PATH;
 		$this->_uploadUrl = $this->_config->imagesDir;
 		
@@ -41,7 +42,11 @@ class KcController extends Zend_Controller_Action
 	
 	public function getjoinerAction()
 	{
-		$this->view->files = Application_Model_kclib_Dir::content($this->_realpath."/js/browser", array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
+		$os = PHP_OS;
+		
+		$path = Application_Model_kclib_Path::normalize($this->_realpath."/js/browser");
+		
+		$this->view->files = Application_Model_kclib_Dir::content($path, array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
 		foreach ($this->view->files as $file) {
 			$fmtime = filemtime($file);
 			if (!isset($mtime) || ($fmtime > $mtime))
@@ -52,15 +57,16 @@ class KcController extends Zend_Controller_Action
 	
 	public function localizeAction()
 	{
+		
 		$request = $this->getRequest();
 		$language = $request->getParam('lng','en');
 		$this->view->fields = null;
 		if( $language != 'en' )
 		{
-			$translation_dir = realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
+			$translation_dir = realpath(dirname(__FILE__)).'/../models/'.self::DIRECTORY_LANGUAGES;
 			//$translation_dir = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
 			// get the correct language
-			$filename = $translation_dir.DIRECTORY_SEPARATOR.$language.'.php';
+			$filename = $translation_dir.'/'.$language.'.php';
 			if( file_exists($filename) )
 			{
 				require_once $filename;
@@ -80,6 +86,7 @@ class KcController extends Zend_Controller_Action
 	
 	public function browseAction()
 	{
+		
 		$request = $this->getRequest();
 		$params = $request->getParams();  
 		
@@ -90,7 +97,7 @@ class KcController extends Zend_Controller_Action
 		$this->view->title = 'demo';
 		$locale=new Zend_Locale();
 		$this->view->language = $locale->getLanguage();
-		if( isset($params['theme']) && file_exists($this->_realpath."/themes/{$params['theme']}" ) )
+		if( isset($params['theme']) && file_exists($this->_realpath."{/}themes{/}{$params['theme']}" ) )
 		{
 			$theme = $params['theme'];				
 		} 
@@ -99,9 +106,9 @@ class KcController extends Zend_Controller_Action
 			$theme = $this->_config->theme;
 		}
 		
-		if( file_exists($this->_realpath."/themes/{$theme}/init.js" ))
+		if( file_exists($this->_realpath."{/}themes{/}{$theme}{/}init.js" ))
 		{
-			$this->view->init_theme = "themes/{$theme}/init.js";
+			$this->view->init_theme = "themes{/}{$theme}{/}init.js";
 		}
 		
 		$browser = array();
@@ -141,6 +148,7 @@ class KcController extends Zend_Controller_Action
 	
 	public function browseinitAction()
 	{
+		
 		$request = $this->getRequest();
 		$type=$request->getParam('images',$this->_config->imagesDir);
 		$mtime = @filemtime($filename);
@@ -148,12 +156,13 @@ class KcController extends Zend_Controller_Action
 		$uploadDir = $this->_uploadDir.$this->_config->uploadURL;
 		$typeDir = $this->_uploadDir.$this->_config->uploadURL.$type;
 		
-		
+		$this->view->charset = "utf-8";
 		$this->view->data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir(), $uploadDir);
 	}
 	
 	public function chdirAction()
 	{
+		
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir', trim($this->_config->imagesDir,'/'));
 		$this->setSessionDir($dir);		
@@ -170,6 +179,7 @@ class KcController extends Zend_Controller_Action
 	}
 	
 	protected function setSessionDir($dir){
+		
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
 		$zf_kceditor->sessionDir = $dir;
 	}
