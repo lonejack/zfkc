@@ -54,7 +54,7 @@ class browser extends uploader {
         $files = dir::content($this->config['uploadDir'], array(
             'types' => "file",
             'pattern' => '/^.*\.zip$/i'
-        ));
+        )); 
 
         if (is_array($files) && count($files)) {
             $time = time();

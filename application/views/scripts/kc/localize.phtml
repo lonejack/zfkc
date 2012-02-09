@@ -16,10 +16,10 @@ if(isset($this->headers))
 
 }
 
-if( isset($this->translation ) )
+if( isset($this->label ) )
 {
 	// out data
-	foreach ($this->translation as $english => $native )
+	foreach ($this->label as $english => $native )
 	{
 		echo "browser.labels['" . $english . "']=\"" . $native . "\";";
 	}

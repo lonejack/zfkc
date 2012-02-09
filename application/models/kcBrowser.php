@@ -795,14 +795,16 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 
 		return $dirs;
 	}
-
-	protected function postDir($existent=true) {
-		$dir = $this->typeDir;
-		if (isset($this->post['dir']))
-		$dir .= "/" . $this->post['dir'];
-		if ($existent && (!is_dir($dir) || !is_readable($dir)))
-		$this->errorMsg("Inexistant or inaccessible folder.");
-		return $dir;
+	
+	static function checkDir($dir ) {
+		
+		if ( !is_dir($dir) )
+			throw new Exception('Inexistant folder.');
+		
+		if( !is_readable($dir) )
+			throw new Exception('Inaccessible folder.');
+		
+		return true;
 	}
 
 	protected function getDir($existent=true) {
