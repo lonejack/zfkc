@@ -6,7 +6,7 @@ class Application_Model_kcUploader {
 
 	/** Config session-overrided settings
 	 * @var array */
-	protected $config = array();
+	public static $config = array();
 
 	/** Opener applocation properties
 	 *   $opener['name']                 Got from $_GET['opener'];
@@ -527,7 +527,7 @@ class Application_Model_kcUploader {
 		return $gd->imagejpeg($file, $this->config['jpegQuality']);
 	}
 
-	protected function makeThumb($file, $overwrite=true) {
+	static function makeThumb($file, $overwrite=true) {
 		$gd = new Application_Model_kclib_Gd($file);
 
 		// Drop files which are not GD handled images

@@ -8,15 +8,27 @@ class KcController extends Zend_Controller_Action
 	protected $_uploadDir;
 	protected $_uploadUrl;
 	const TYPE = '/images';
+	protected $_imagesAbsolutePath;
+	protected $_imagesRelativePath;
+	protected $_types;
+	
 
 	public function init()
 	{
 		/* Initialize action controller here */
 
 		$this->_config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
-		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->publicPath);
+		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_config->uploadURL;
 		$this->_uploadUrl = $this->_config->imagesDir;
+		$this->_imagesAbsolutePath = $this->_config->publicPath.$this->_config->imagesDir;
+		$this->_imagesRelativePath = $this->_config->imagesDir;
+		$request = $this->getRequest();
+		
+		// define types we're working on
+		$this->_types = $request->getParam('type','images');
+		Application_Model_kcBrowser::$config = $this->_config->toArray();
+		
 
 	}
 
@@ -98,7 +110,7 @@ class KcController extends Zend_Controller_Action
 		$locale=new Zend_Locale();
 		$language = $locale->getLanguage();
 		$this->view->language = $language;
-		if( isset($params['theme']) && file_exists($this->_realpath."{/}themes{/}{$params['theme']}" ) )
+		if( isset($params['theme']) && file_exists($this->_realpath."/themes/{$params['theme']}" ) )
 		{
 			$theme = $params['theme'];
 		}
@@ -107,9 +119,9 @@ class KcController extends Zend_Controller_Action
 			$theme = $this->_config->theme;
 		}
 
-		if( file_exists($this->_realpath."{/}themes{/}{$theme}{/}init.js" ))
+		if( file_exists($this->_realpath."/themes/{$theme}/init.js" ))
 		{
-			$this->view->init_theme = "themes{/}{$theme}{/}init.js";
+			$this->view->init_theme = "themes/{$theme}/init.js";
 		}
 
 		$browser = array();
@@ -143,7 +155,7 @@ class KcController extends Zend_Controller_Action
 		$this->view->type = 'images';
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
-		$this->view->publicPath = 'http://zfkc.local/'.$this->_config->publicPath;
+		$this->view->publicPath = $this->_config->kcPath;
 		$this->view->label = $this->_getLabels($language);
 		
 		
@@ -162,34 +174,74 @@ class KcController extends Zend_Controller_Action
 	{
 
 		$request = $this->getRequest();
-		$type=$request->getParam('images',$this->_config->imagesDir);
-		$mtime = @filemtime($filename);
+		
+		$mtime = @filemtime(__FILE__);
 		$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
 		$uploadDir = $this->_uploadDir;
 		$typeDir = $this->_uploadDir.self::TYPE;
 
 		$this->view->charset = "utf-8";
-		$this->view->data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir(), $uploadDir);
+		$this->view->data = Application_Model_kcBrowser::act_init($uploadDir,$this->getSessionDir());
 	}
 
 	public function chdirAction()
 	{
 
 		$request = $this->getRequest();
-		$dir = $request->getParam('dir', trim($this->_config->imagesDir,'/'));
+		$dir = $request->getParam('dir','');
 		
-		$directory = $this->_uploadDir.'/'. $dir;
+		// direct answer, don not render the view
+		$this->_helper->viewRenderer->setNoRender();
+		$response = $this->getResponse();
+		
 		try {
-			Application_Model_kcBrowser::checkDir($directory);
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
-			$this->view->message = $e->getMessage();
-			$content = $this->view->render('kc/jserror.phtml');
-			$response = $this->getResponse();
-			$response->appendBody($content);
+			
+			$message = $e->getMessage();
+			$response->appendBody(Zend_Json::encode(array('error' => $message)));
+			return ;
+		}
+		$this->setSessionDir($dir);
+		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
+		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
+		$answer = array (
+			'files' => $files,
+			'dirWritable' => $dirWritable			
+			);
+		$response->appendBody(Zend_Json::encode($answer));
+		
+	}
+	
+	public function thumbAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir','');
+	}
+	
+	public function expandAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir','');
+		
+		// direct answer, don not render the view
+		$this->_helper->viewRenderer->setNoRender();
+		$response = $this->getResponse();
+		
+		try {
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+		} catch (Exception $e){
+			$message = $e->getMessage();
+			$response->appendBody(Zend_Json::encode(array('error' => $message)));
 			return ;
 		}
 		
-		$this->setSessionDir($dir);
+		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
+		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
+		
+		$answer = array (
+			'files' => $files,
+			'dirWritable' => $dirWritable			
+			);
+		$response->appendBody(Zend_Json::encode($answer));
 	}
 
 	protected function getSessionDir(){

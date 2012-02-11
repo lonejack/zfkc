@@ -46,7 +46,10 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 					if( array_key_exists($params['act'], $jump) )
 					{
 						$defaults['action'] = $jump[$params['act']];
-							
+					}
+					else
+					{
+						$defaults['action'] = $params['act'];
 					}
 					
 				}

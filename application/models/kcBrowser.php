@@ -138,12 +138,14 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		return self::KC_BROWSER_OK;//return $this->output();
 	}
 
-	static function act_init($typeDir,$sessionDir,$uploadDir) {
-		$tree = self::getDirInfo($typeDir,$sessionDir,$uploadDir);
-		$tree['dirs'] = self::getTree($sessionDir,$uploadDir);
+	static function act_init($uploadDir, $sessionDir) {
+		
+		//$tree = self::getDirInfo($uploadDir);
+		
+		$tree = self::getTree($uploadDir, $sessionDir);
 		if (!is_array($tree['dirs']) || !count($tree['dirs']))
 		unset($tree['dirs']);
-		$files = self::getFiles($sessionDir,$uploadDir);
+		$files = self::getFiles($uploadDir,$sessionDir);
 		$dirWritable = Application_Model_kclib_Dir::isWritable("$uploadDir/$sessionDir");
 		$data = array(
 	            'tree' => &$tree,
@@ -716,24 +718,25 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		die;
 	}
 
-	static function getFiles($dir,$uploadDir) {
-		
+	static function getFiles($uploadDir,$dir) {
+
 		$thumbDir = "$uploadDir/".self::THUMBS_DIR."/$dir";
 		$dir = "$uploadDir/$dir";
 		$return = array();
 		$files = Application_Model_kclib_Dir::content($dir, array('types' => "file"));
-		if ($files === false)
-		return $return;
+		if ($files === false){
+			return $return;
+		}
 
 		foreach ($files as $file) {
 			$size = @getimagesize($file);
 			if (is_array($size) && count($size)) {
 				$thumb_file = "$thumbDir/" . basename($file);
 				if (!is_file($thumb_file))
-				$this->makeThumb($file, false);
+				self::makeThumb($file, false);
 				$smallThumb =
-				($size[0] <= $this->config['thumbWidth']) &&
-				($size[1] <= $this->config['thumbHeight']) &&
+				($size[0] <= self::$config['thumbWidth']) &&
+				($size[1] <= self::$config['thumbHeight']) &&
 				in_array($size[2], array(IMAGETYPE_GIF, IMAGETYPE_PNG, IMAGETYPE_JPEG));
 			} else
 			$smallThumb = false;
@@ -742,69 +745,70 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 			if ($stat === false) continue;
 			$name = basename($file);
 			$ext = Application_Model_kclib_File::getExtension($file);
-			$bigIcon = file_exists("themes/{$this->config['theme']}/img/files/big/$ext.png");
-			$smallIcon = file_exists("themes/{$this->config['theme']}/img/files/small/$ext.png");
+			$theme = self::$config['theme'];
+			$bigIcon = file_exists("themes/$theme/img/files/big/$ext.png");
+			$smallIcon = file_exists("themes/$theme/img/files/small/$ext.png");
 			$thumb = file_exists("$thumbDir/$name");
 			$return[] = array(
-		'name' => stripcslashes($name),
-		'size' => $stat['size'],
-		'mtime' => $stat['mtime'],
-		'date' => @strftime($this->dateTimeSmall, $stat['mtime']),
-		'readable' => is_readable($file),
-	                'writable' => Application_Model_kclib_File::isWritable($file),
-		'bigIcon' => $bigIcon,
-		'smallIcon' => $smallIcon,
-		'thumb' => $thumb,
-	                'smallThumb' => $smallThumb
+				'name' => stripcslashes($name),
+				'size' => $stat['size'],
+				'mtime' => $stat['mtime'],
+				'date' => @strftime(self::$config['format_date'], $stat['mtime']),
+				'readable' => is_readable($file),
+	            'writable' => Application_Model_kclib_File::isWritable($file),
+				'bigIcon' => $bigIcon,
+				'smallIcon' => $smallIcon,
+				'thumb' => $thumb,
+	            'smallThumb' => $smallThumb
 			);
 		}
 		return $return;
 	}
 
-	static function getTree($dir, &$uploadDir, $index=0) {
-		$path = explode("/", $dir);
-
-		$pdir = "";
-		for ($i = 0; ($i <= $index && $i < count($path)); $i++)
-		$pdir .= "/{$path[$i]}";
-		if (strlen($pdir))
-		$pdir = substr($pdir, 1);
-
-		$fdir = "$uploadDir/$pdir";
-
-		$dirs = self::getDirs($fdir,$uploadDir,$uploadDir);
-
-		if (is_array($dirs) && count($dirs) && ($index <= count($path) - 1)) {
-
-			foreach ($dirs as $i => $cdir) {
-				if ($cdir['hasDirs'] &&
-				(
-				($index == count($path) - 1) ||
-				($cdir['name'] == $path[$index + 1])
-				)
-				) {
-					$dirs[$i]['dirs'] = self::getTree($dir,$uploadDir, $index + 1);
-					if (!is_array($dirs[$i]['dirs']) || !count($dirs[$i]['dirs'])) {
-						unset($dirs[$i]['dirs']);
-						continue;
-					}
+	static function getTree($baseDir, $dpath, $index=0) {
+		
+		static $sub_dir;
+		
+		if( $index == 0 )
+		{
+			
+			//build the tree on $path
+			$sub_dir = explode("/", $dpath);
+		}
+		$paths = array();
+		$paths = self::getDirInfo($baseDir);
+		
+		/* search for subdirs under basedir */
+		$sub_paths = self::getDirs($baseDir);
+		if( is_array($sub_paths) )
+		{
+			
+			foreach ($sub_paths as $key => $nPage)
+			{
+				if( isset($sub_dir[$index]) && $nPage['name'] == $sub_dir[$index] )
+				{
+					$sub_paths[$key]['dirs']= self::getTree($baseDir.'/'.$sub_dir[$index], null, $index+1);
 				}
 			}
-		} else
-		return false;
-
-		return $dirs;
+			$paths['dirs'] = $sub_paths;
+		}
+		return $paths;
 	}
 	
-	static function checkDir($dir ) {
+	static function checkDir( $upload_dir, $dir ) {
+		$directory = realpath($upload_dir.'/'. $dir);
+		if( strncmp($upload_dir, $directory, strlen($upload_dir))  )
+		{
+			throw new Exception('Invalid request!');
+		}
 		
-		if ( !is_dir($dir) )
+		if ( !is_dir($directory) )
 			throw new Exception('Inexistant folder.');
 		
-		if( !is_readable($dir) )
+		if( !is_readable($directory) )
 			throw new Exception('Inaccessible folder.');
 		
-		return true;
+		return $directory;
 	}
 
 	protected function getDir($existent=true) {
@@ -816,22 +820,23 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		return $dir;
 	}
 
-	static function getDirs($dir, $sessionDir,$uploadDir) {
+	static function getDirs($dir) {
 		$dirs = Application_Model_kclib_Dir::content($dir, array('types' => "dir"));
 		$return = array();
 		if (is_array($dirs)) {
 			$writable = Application_Model_kclib_Dir::isWritable($dir);
 			foreach ($dirs as $cdir) {
-				$info = self::getDirInfo($cdir, $sessionDir,$uploadDir);
+				$info = self::getDirInfo($cdir);
 				if ($info === false) continue;
 				$info['removable'] = $writable && $info['writable'];
 				$return[] = $info;
 			}
+			return $return;
 		}
-		return $return;
+		return null;
 	}
 
-	static function getDirInfo($dir, $sessionDir,$uploadDir, $removable=false) {
+	static function getDirInfo($dir) {
 		if ((substr(basename($dir), 0, 1) == ".") || !is_dir($dir) || !is_readable($dir))
 		return false;
 		$dirs = Application_Model_kclib_Dir::content($dir, array('types' => "dir"));
@@ -845,15 +850,14 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 
 		$writable = Application_Model_kclib_Dir::isWritable($dir);
 		$info = array(
-	'name' => stripslashes(basename($dir)),
-	'readable' => is_readable($dir),
-	'writable' => $writable,
-	            'removable' => $removable && $writable && Application_Model_kclib_Dir::isWritable(dirname($dir)),
-	'hasDirs' => $hasDirs
+			'name' => stripslashes(basename($dir)),
+			'readable' => is_readable($dir),
+			'writable' => $writable,
+			'removable' => $writable && Application_Model_kclib_Dir::isWritable(dirname($dir)),
+			'hasDirs' => $hasDirs
 		);
 
-		if ($dir == "$uploadDir/$sessionDir")
-		$info['current'] = true;
+		
 
 		return $info;
 	}
