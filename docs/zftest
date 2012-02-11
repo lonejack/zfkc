@@ -1,0 +1,15 @@
+<VirtualHost *:80>
+
+	DocumentRoot /home/claudio/public_html/zftest/public
+	ServerName zftest.local
+	SetEnv APPLICATION_ENV "development"
+	SuexecUserGroup claudio www-data
+        
+       	<Directory /home/claudio/public_html/zftest/public>
+        	DirectoryIndex index.php
+        	AllowOverride All
+		Order allow,deny
+           	Allow from all
+        </Directory>
+</VirtualHost>
+

@@ -1,0 +1,15 @@
+<VirtualHost *:80>
+
+	DocumentRoot /home/claudio/public_html/zfkc/public
+	ServerName zfkc.local
+	SetEnv APPLICATION_ENV "development"
+	SuexecUserGroup www-data www-data
+        
+       	<Directory /home/claudio/public_html/zfkc/public>
+        	DirectoryIndex index.php
+        	AllowOverride All
+		Order allow,deny
+           	Allow from all
+        </Directory>
+</VirtualHost>
+
