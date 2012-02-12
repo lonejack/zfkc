@@ -155,6 +155,11 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		return $data;
 	}
 
+	protected function buildThumb($source, $destination, $width, $height, $owerWrite=true ){
+		$image = new Application_Model_kclib_Gd($source);
+		
+	}
+	
 	protected function act_thumb() {
 		$this->getDir($this->get['dir'], true);
 		if (!isset($this->get['file']) || !isset($this->get['dir']))
@@ -768,15 +773,16 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 	static function getTree($baseDir, $dpath, $index=0) {
 		
 		static $sub_dir;
-		
+		$paths = array();
 		if( $index == 0 )
 		{
 			
 			//build the tree on $path
 			$sub_dir = explode("/", $dpath);
+			$paths = self::getDirInfo($baseDir);
 		}
-		$paths = array();
-		$paths = self::getDirInfo($baseDir);
+		
+		
 		
 		/* search for subdirs under basedir */
 		$sub_paths = self::getDirs($baseDir);
@@ -793,6 +799,24 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 			$paths['dirs'] = $sub_paths;
 		}
 		return $paths;
+	}
+	
+	static function existFile( $upload_dir, $name ) {
+		$file = realpath($upload_dir.'/'. $name);
+		if( strncmp($upload_dir, $file, strlen($upload_dir))  )
+		{
+			throw new Exception('Invalid request!',-1);
+		}
+
+		if ( !is_file($file) )
+		{
+			throw new Exception('file $name is Inexistant!',1);
+		}
+		if( !is_readable($file) )
+		{
+			throw new Exception('file $name is unreadable',2);
+		}
+		return $file;
 	}
 	
 	static function checkDir( $upload_dir, $dir ) {

@@ -11,7 +11,8 @@ class KcController extends Zend_Controller_Action
 	protected $_imagesAbsolutePath;
 	protected $_imagesRelativePath;
 	protected $_types;
-	
+	protected $_config;
+
 
 	public function init()
 	{
@@ -24,11 +25,11 @@ class KcController extends Zend_Controller_Action
 		$this->_imagesAbsolutePath = $this->_config->publicPath.$this->_config->imagesDir;
 		$this->_imagesRelativePath = $this->_config->imagesDir;
 		$request = $this->getRequest();
-		
+
 		// define types we're working on
 		$this->_types = $request->getParam('type','images');
 		Application_Model_kcBrowser::$config = $this->_config->toArray();
-		
+
 
 	}
 
@@ -157,8 +158,8 @@ class KcController extends Zend_Controller_Action
 		$this->view->browser = $browser;
 		$this->view->publicPath = $this->_config->kcPath;
 		$this->view->label = $this->_getLabels($language);
-		
-		
+
+
 		$trclass = new KcTranslation();
 		$translation= array();
 		foreach ($trclass->lang as $english => $native )
@@ -174,14 +175,14 @@ class KcController extends Zend_Controller_Action
 	{
 
 		$request = $this->getRequest();
-		
+
 		$mtime = @filemtime(__FILE__);
 		$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
 		$uploadDir = $this->_uploadDir;
 		$typeDir = $this->_uploadDir.self::TYPE;
 
 		$this->view->charset = "utf-8";
-		$this->view->data = Application_Model_kcBrowser::act_init($uploadDir,$this->getSessionDir());
+		$this->view->data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir());
 	}
 
 	public function chdirAction()
@@ -189,15 +190,15 @@ class KcController extends Zend_Controller_Action
 
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
-		
+
 		// direct answer, don not render the view
 		$this->_helper->viewRenderer->setNoRender();
 		$response = $this->getResponse();
-		
+
 		try {
 			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
-			
+				
 			$message = $e->getMessage();
 			$response->appendBody(Zend_Json::encode(array('error' => $message)));
 			return ;
@@ -208,40 +209,73 @@ class KcController extends Zend_Controller_Action
 		$answer = array (
 			'files' => $files,
 			'dirWritable' => $dirWritable			
-			);
+		);
 		$response->appendBody(Zend_Json::encode($answer));
-		
+
 	}
-	
+
 	public function thumbAction(){
 		$request = $this->getRequest();
-		$dir = $request->getParam('dir','');
-	}
-	
-	public function expandAction(){
-		$request = $this->getRequest();
-		$dir = $request->getParam('dir','');
-		
-		// direct answer, don not render the view
-		$this->_helper->viewRenderer->setNoRender();
-		$response = $this->getResponse();
-		
+		$dir = $request->getParam('dir',null);
+		$file = $request->getParam('file',null);
+		if( isset($dir) || isset($file) )
+		{
+			// set default thumb
+				
+		}
+
+		// check existence
 		try {
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$file = Application_Model_kcBrowser::existFile($this->_uploadDir,$dir);
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			$response->appendBody(Zend_Json::encode(array('error' => $message)));
 			return ;
 		}
-		
-		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
-		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
-		
-		$answer = array (
-			'files' => $files,
-			'dirWritable' => $dirWritable			
-			);
-		$response->appendBody(Zend_Json::encode($answer));
+		// check thumb existence
+		try {
+			$thumb = Application_Model_kcBrowser::existFile(
+			$this->_uploadDir.$this->_config->thumbdirs,
+			$dir);
+		} catch (Exception $e){
+			// thumb not present
+			$code = $e->getCode();
+			if( $code < 0 )
+			{
+				$message = $e->getMessage();
+				$response->appendBody(Zend_Json::encode(array('error' => $message)));
+			}
+			if( $code == 1 )
+			{
+				// file unreadable
+				$writer = new Zend_Log_Writer_Stream('php://stderr');
+				$logger = new Zend_Log($writer);
+				$file = $this->_uploadDir.$this->_config->thumbdirs.$dir;
+				
+				$logger->info('File: $file not allowed to read!');
+				
+			}
+			else
+			{
+				// try to build
+			}
+			return ;
+		}
+
+
+		$this->_helper->viewRenderer->setNoRender();
+
+	}
+
+	public function expandAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir','');
+
+		// direct answer, don not render the view
+		$this->_helper->viewRenderer->setNoRender();
+		$response = $this->getResponse();
+
+		$response->appendBody(Zend_Json::encode(array('dirs' => Application_Model_kcBrowser::getDirs($directory))));
 	}
 
 	protected function getSessionDir(){
@@ -282,7 +316,7 @@ class KcController extends Zend_Controller_Action
 				{
 					$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
 				}
-				
+
 			}
 		}
 		return $translation;
