@@ -2,4 +2,5 @@
 .buildpath
 .project
 library
-public/upload/images
+public/upload
+public/upload/.thumbs
