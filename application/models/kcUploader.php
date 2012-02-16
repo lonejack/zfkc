@@ -527,7 +527,7 @@ class Application_Model_kcUploader {
 		return $gd->imagejpeg($file, $this->config['jpegQuality']);
 	}
 
-	static function makeThumb($file, $overwrite=true) {
+	static function makeThumb1($file, $overwrite=true) {
 		$gd = new Application_Model_kclib_Gd($file);
 
 		// Drop files which are not GD handled images

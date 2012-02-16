@@ -19,6 +19,9 @@ class KcController extends Zend_Controller_Action
 		/* Initialize action controller here */
 
 		$this->_config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
+		//$this->_config->dirPerms = octdec($this->_config->dirPerms);
+		//$this->_config->filePerms = octdec($this->_config->filePerms);
+		
 		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_config->uploadURL;
 		$this->_uploadUrl = $this->_config->imagesDir;
@@ -28,8 +31,13 @@ class KcController extends Zend_Controller_Action
 
 		// define types we're working on
 		$this->_types = $request->getParam('type','images');
+		
 		Application_Model_kcBrowser::$config = $this->_config->toArray();
-
+		if( !is_int(Application_Model_kcBrowser::$config['dirPerms']) )
+		{
+			Application_Model_kcBrowser::$config['dirPerms'] = octdec(Application_Model_kcBrowser::$config['dirPerms']);
+			Application_Model_kcBrowser::$config['filePerms'] = octdec(Application_Model_kcBrowser::$config['filePerms']);
+		}
 
 	}
 
@@ -135,7 +143,6 @@ class KcController extends Zend_Controller_Action
 		$browser['supportZip'] = 'false'; //class_exists('ZipArchive') && !$this->config['denyZipDownload']) ? "true" : "false"
 		$browser['check4Update'] = 'false'; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
 		$browser['type'] = 'images';
-		$browser['access'] = json_encode($this->_config->access);
 		$kcsession = Zend_Session::namespaceGet('KcFinder');
 		$browser['dir'] = 'images/public';//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
 		$browser['uploadURL'] = $this->_config->uploadURL;
@@ -146,7 +153,22 @@ class KcController extends Zend_Controller_Action
 		$browser['funcNumCkEditor'] = '';
 		$browser['openerName'] = null;
 		$browser['cms'] = null;
-		$browser['access'] = '{"files":{"upload":true,"delete":true,"copy":true,"move":true,"rename":true},"dirs":{"create":true,"delete":true,"rename":true}}';
+		$access = $this->_config->access->toArray();
+		foreach ($access as $key1 => $par1 ){
+			foreach ($par1 as $key=>$par){
+				if( $par )  {
+					$access[$key1][$key] = true;
+				}
+				else {
+					$access[$key1][$key] = false;
+				}
+			}
+				
+		}
+
+			
+		$browser['access'] = Zend_Json::encode($access); 
+		//'{"files":{"upload":true,"delete":true,"copy":true,"move":true,"rename":true},"dirs":{"create":true,"delete":true,"rename":true}}';
 		$front = Zend_Controller_Front::getInstance();
 
 
@@ -215,67 +237,58 @@ class KcController extends Zend_Controller_Action
 	}
 
 	public function thumbAction(){
+		$contextSwitch =$this->_helper->contextSwitch();
+		$contextSwitch->initContext();
+		
+		$this->_helper->viewRenderer->setNoRender();
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir',null);
-		$file = $request->getParam('file',null);
-		if( isset($dir) || isset($file) )
+		$file_name = $request->getParam('file',null);
+		$default = true;
+		$lastcode = null;
+		
+		if( isset($dir) && isset($file_name) )
 		{
-			// set default thumb
-				
-		}
+			$file= $dir.'/'.$file_name;
 
-		// check existence
-		try {
-			$file = Application_Model_kcBrowser::existFile($this->_uploadDir,$dir);
-		} catch (Exception $e){
-			$message = $e->getMessage();
-			$response->appendBody(Zend_Json::encode(array('error' => $message)));
-			return ;
-		}
-		// check thumb existence
-		try {
-			$thumb = Application_Model_kcBrowser::existFile(
-			$this->_uploadDir.$this->_config->thumbdirs,
-			$dir);
-		} catch (Exception $e){
-			// thumb not present
-			$code = $e->getCode();
-			if( $code < 0 )
-			{
+			// check existence
+			try {
+				$file_real = Application_Model_kcBrowser::existFile(
+					$this->_uploadDir,$file);
+				$thumb_real = Application_Model_kcBrowser::existFile(
+					$this->_uploadDir.'/'.$this->_config->thumbsDir, $file);
+				unset($default);
+			} catch (Exception $e){
 				$message = $e->getMessage();
-				$response->appendBody(Zend_Json::encode(array('error' => $message)));
+				/**
+				 * TODO: check if file exist and thumb doesn't exist
+				 * and sent this case to the log
+				 */
 			}
-			if( $code == 1 )
-			{
-				// file unreadable
-				$writer = new Zend_Log_Writer_Stream('php://stderr');
-				$logger = new Zend_Log($writer);
-				$file = $this->_uploadDir.$this->_config->thumbdirs.$dir;
-				
-				$logger->info('File: $file not allowed to read!');
-				
-			}
-			else
-			{
-				// try to build
-			}
-			return ;
 		}
-
-
-		$this->_helper->viewRenderer->setNoRender();
+		
+		if( isset($default ) )
+		{
+			$ext = Application_Model_kclib_File::getExtension($file_name);
+			$thumb = "{$this->_realpath}/themes/{$this->_config->theme}/img/files/big/$ext.png";
+		}
+		else
+		{
+			$thumb = $thumb_real;
+		}
+		
+		$contextSwitch->addContext('tipo', array ('Content-Type'=>'image/png'));
+		readfile($thumb);
 
 	}
 
 	public function expandAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
-
-		// direct answer, don not render the view
-		$this->_helper->viewRenderer->setNoRender();
-		$response = $this->getResponse();
-
-		$response->appendBody(Zend_Json::encode(array('dirs' => Application_Model_kcBrowser::getDirs($directory))));
+		//$this->_helper->json($data, array('enableJsonExprFinder' => true));
+		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
+		$this->_helper->json->sendJson($data);
+		
 	}
 
 	protected function getSessionDir(){

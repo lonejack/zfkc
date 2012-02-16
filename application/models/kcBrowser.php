@@ -155,8 +155,39 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		return $data;
 	}
 
-	protected function buildThumb($source, $destination, $width, $height, $owerWrite=true ){
-		$image = new Application_Model_kclib_Gd($source);
+	static function makeThumb($source, $destination, $width, $height, $overwrite=true){
+		$gd = new Application_Model_kclib_Gd($source);
+
+        // Drop files which are not GD handled images
+        if ($gd->init_error)
+            return true;
+
+/*        $thumb = substr($file, strlen($this->config['uploadDir']));
+        $thumb = $this->config['uploadDir'] . "/" . $this->config['thumbsDir'] . "/" . $thumb;
+        $thumb = path::normalize($thumb);*/
+        $thumbDir = dirname($destination);
+        $perm = self::$config['dirPerms'];
+        if (!is_dir($thumbDir) && !@mkdir($thumbDir,$perm , true))
+            return false;
+
+        if (!$overwrite && is_file($destination))
+            return true;
+
+        // Images with smaller resolutions than thumbnails
+        if (($gd->get_width() <= self::$config['thumbWidth']) &&
+            ($gd->get_height() <= self::$config['thumbHeight'])
+        ) {
+            $browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
+            // Drop only browsable types
+            if (in_array($gd->type, $browsable))
+                return true;
+
+        // Resize image
+        } elseif (!$gd->resize_fit(self::$config['thumbWidth'], self::$config['thumbHeight']))
+            return false;
+
+        // Save thumbnail
+        return $gd->imagejpeg($destination, self::$config['jpegQuality']);
 		
 	}
 	
@@ -717,7 +748,7 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 			$thumb = "themes/{$this->config['theme']}/img/files/big/$ext.png";
 		}
 		if (!isset($thumb) || !file_exists($thumb))
-		$thumb = "themes/{$this->config['theme']}/img/files/big/..png";
+			$thumb = "themes/{$this->config['theme']}/img/files/big/..png";
 		header("Content-Type: image/png");
 		readfile($thumb);
 		die;
@@ -738,7 +769,7 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 			if (is_array($size) && count($size)) {
 				$thumb_file = "$thumbDir/" . basename($file);
 				if (!is_file($thumb_file))
-				self::makeThumb($file, false);
+					self::makeThumb($file, $thumb_file,self::$config['thumbWidth'],self::$config['thumbHeight'],false);
 				$smallThumb =
 				($size[0] <= self::$config['thumbWidth']) &&
 				($size[1] <= self::$config['thumbHeight']) &&
@@ -810,11 +841,11 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 
 		if ( !is_file($file) )
 		{
-			throw new Exception('file $name is Inexistant!',1);
+			throw new Exception("file $name is Inexistant!",1);
 		}
 		if( !is_readable($file) )
 		{
-			throw new Exception('file $name is unreadable',2);
+			throw new Exception("file $name is unreadable",2);
 		}
 		return $file;
 	}

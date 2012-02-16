@@ -42,7 +42,7 @@ class Application_Model_kclib_Gd {
 
     protected function build_image($image) {
 
-        if ($image instanceof gd) {
+        if ($image instanceof Application_Model_kclib_Gd) {
             $width = $image->get_width();
             $height = $image->get_height();
             $image = $image->get_image();
@@ -197,7 +197,7 @@ class Application_Model_kclib_Gd {
         if (!$width) $width = 1;
         if (!$height) $height = 1;
         return (
-            (false !== ($img = new gd(array($width, $height)))) &&
+            (false !== ($img = new Application_Model_kclib_Gd(array($width, $height)))) &&
             $img->imagecopyresampled($this) &&
             (false !== ($this->image = $img->get_image())) &&
             (false !== ($this->width = $img->get_width())) &&
