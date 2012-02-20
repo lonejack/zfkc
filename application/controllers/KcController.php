@@ -38,6 +38,10 @@ class KcController extends Zend_Controller_Action
 			Application_Model_kcBrowser::$config['dirPerms'] = octdec(Application_Model_kcBrowser::$config['dirPerms']);
 			Application_Model_kcBrowser::$config['filePerms'] = octdec(Application_Model_kcBrowser::$config['filePerms']);
 		}
+		
+		$layout = Zend_Layout::getMvcInstance();
+		$layout->disableLayout();
+		
 
 	}
 
@@ -110,7 +114,7 @@ class KcController extends Zend_Controller_Action
 
 		$request = $this->getRequest();
 		$params = $request->getParams();
-
+		
 		if( isset($this->_config->session) )
 		{
 			Zend_Session::setOptions($this->_config->session->toArray());
@@ -174,7 +178,7 @@ class KcController extends Zend_Controller_Action
 
 		$kuki['domain'] = 'zfkc.local';//_.kuki.domain = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookieDomain']) ? >";
 		$kuki['path'] = '/';//_.kuki.path = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePath']) ? >";
-		$kuki['prefix'] = 'KCFINDER_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
+		$kuki['prefix'] = 'MKCFINDER_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
 		$this->view->type = 'images';
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
@@ -189,8 +193,11 @@ class KcController extends Zend_Controller_Action
 			$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
 		}
 		$this->view->label = $translation;
-
-
+		//$this->view->headScript()->appendFile($this->_config->kcPath.'js/jquery.js','text/javascript');
+		//$r = $this->render();
+		//$response = $this->getResponse();
+		//$response->setBody($r);
+		
 	}
 
 	public function browseinitAction()

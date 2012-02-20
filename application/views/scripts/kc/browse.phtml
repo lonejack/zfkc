@@ -35,9 +35,9 @@ browser.thumbsURL = browser.uploadURL + "/<?=  $this->browser['thumbsDir'] ?>";
 <?php if ( $this->setOpener ): ?>
 browser.opener.name = "<?= $this->browser['openerName'] ?>";
 <?php endif; ?>
-<?php if ( $this->browser['isOpenedByCk'] ): ?>
+<?php if ( $this->browser['isOpenedByCk']|| 1 ): ?>
 browser.opener.CKEditor = {};
-browser.opener.CKEditor.funcNum = <?= $this->funcNumCkEditor ?>;
+browser.opener.CKEditor.funcNum = <?php echo '2';/* $this->funcNumCkEditor */ ?>;
 <?php endif; ?>
 <?php if ($this->browser['tinyMCE'] ): ?>
 browser.opener.TinyMCE = true;

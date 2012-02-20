@@ -1,75 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type"
 	content="application/xhtml+xml; charset=utf-8" />
-
-
-
-
-	<?php $this->headLink()->appendStylesheet('/styles/main.css');?>    
-	<?php echo $this->headLink(); ?>
+	<?php echo $this->headTitle() ?>
+	<?php echo $this->headStyle() ?>
+	<?php echo $this->headScript() ?>
   <title></title>
 </head>
 <body>
-<?php
-if( $this->registered )
-{
-	$top = array(
-		$this->navigation()->findOneBy('label', 'Admin'),
-		$this->navigation()->findOneBy('label', 'Logout')
-	);
-}
-else
-{
-	$top = array($this->navigation()->findOneBy('label', 'Login'));
-}
-
-$headlinks = array();
-foreach($top as $page )
-{
-	$headlinks[]=$this->navigation()->htmlify($page);
-}
-$top_row = $this->partial('top_row.phtml','admin' ,array('pages'=>$headlinks));
-$navigation = $this->navigation()->findAllBy('location','topmenu');
-
-$admin = $this->navigation()->findOneBy('label','Admin');
-$headrow = $this->navigation()->findOneByLabel('Front Page');
-$options_top = array(
-    'indent'  => 16,
-    'ulClass' => 'headclass'
-);
-?>
-	<div id="page-wrapper" title="container">
-		<div class="container_12 content-wrapper" title="big_box">
-			<div class="grid_12" title="top_box">
-				<div class="header">
-					<div id="headline">
-					<?php echo $top_row ?>
-					</div>
-					<h1 class="logo"><a href="/" title="www.tuttivini.it"><span>www.tuttivini.it</span></a></h1>
-				</div>
-				<!-- header -->
-			</div>
-			<!-- top_box -->
-			<div class="clear"></div>
-			
-			<!-- navigation -->
-			<div id="topnav">
-				<ul class="navigation">
-				<?php echo $this->pagesHelper($navigation)->doAccept()->renderMenu('topmenu');?>
-				</ul>
-			</div>
-			<div class="breadcrumbs">
-				<span>Ti trovi</span><?php echo $this->navigation()->breadcrumbs()->setMinDepth(1)->setLinkLast(true)->setSeparator("» ")?>
-			</div>
-			<!-- content -->
-			<div class="content">
-				<?php echo $this->layout()->content; ?>
-			</div>
-		</div>
-		<!-- top_box -->
+	<div class="content">
+	<?php echo $this->layout()->content; ?>
 	</div>
 </body>
 </html>
