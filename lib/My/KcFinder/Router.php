@@ -17,7 +17,7 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 		$params = $request->getParams();
 		switch($pathex[0])
 		{
-			case 'getcss.php':
+			case 'style.css':
 				switch($params['type'] )
 				{
 					default:
@@ -55,7 +55,7 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 				}
 				break;
 				
-			case 'getjoiner':
+			case 'getjoiner.js':
 				$defaults['action'] = 'getjoiner';
 				break;
 				

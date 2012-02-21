@@ -21,7 +21,7 @@ class KcController extends Zend_Controller_Action
 		$this->_config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
 		//$this->_config->dirPerms = octdec($this->_config->dirPerms);
 		//$this->_config->filePerms = octdec($this->_config->filePerms);
-		
+
 		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_config->uploadURL;
 		$this->_uploadUrl = $this->_config->imagesDir;
@@ -31,17 +31,17 @@ class KcController extends Zend_Controller_Action
 
 		// define types we're working on
 		$this->_types = $request->getParam('type','images');
-		
+
 		Application_Model_kcBrowser::$config = $this->_config->toArray();
 		if( !is_int(Application_Model_kcBrowser::$config['dirPerms']) )
 		{
 			Application_Model_kcBrowser::$config['dirPerms'] = octdec(Application_Model_kcBrowser::$config['dirPerms']);
 			Application_Model_kcBrowser::$config['filePerms'] = octdec(Application_Model_kcBrowser::$config['filePerms']);
 		}
-		
+
 		$layout = Zend_Layout::getMvcInstance();
 		$layout->disableLayout();
-		
+
 
 	}
 
@@ -55,29 +55,63 @@ class KcController extends Zend_Controller_Action
 		// action body
 	}
 
-	public function getcssimageAction()
+	public function styleAction()
 	{
-		$mtime = @filemtime(__FILE__);
-		$headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
-		$headers[] = header("Content-Type: text/css");
-		$this->view->headers = $headers;
+		$path = realpath(dirname(__FILE__).'/../views/scripts/kc/style.phtml');
+		$mtime = @filemtime($path);
+
+		$response = $this->getResponse();
+		$response->setHeader('Content-Type', 'text/css',true);
+		$response->setHeader('Cache-Control', 'public, max-age=3600',true);
+		$response->setHeader('Pragma', 'public',true);
+
+		$response->setHeader('Last-Modified',gmdate("D, d M Y H:i:s", $mtime) . " GMT");
+		$request = $this->getRequest();
+		$cacheDate = $request->getHeader('If-Modified-Since');
+		if( is_string($cacheDate) )
+		{
+			$client_mtime = @strtotime($cacheDate);
+			if( $client_mtime == $mtime)
+			{
+				$response->setRawHeader('HTTP/1.1 304 Not Modified');
+				$this->_helper->viewRenderer->setNoRender();
+				return;
+			}
+		}
 		$this->view->thumbWidth = 100;
 		$this->view->thumbHeight = 100;
 	}
 
 	public function getjoinerAction()
 	{
-		$os = PHP_OS;
+		//$os = PHP_OS;
 
 		$path = Application_Model_kclib_Path::normalize($this->_realpath."/js/browser");
-
 		$this->view->files = Application_Model_kclib_Dir::content($path, array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
 		foreach ($this->view->files as $file) {
 			$fmtime = filemtime($file);
 			if (!isset($mtime) || ($fmtime > $mtime))
 			$mtime = $fmtime;
 		}
-		$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
+
+		$response = $this->getResponse();
+		$response->setHeader('Content-Type', 'text/css',true);
+		$response->setHeader('Cache-Control', 'public, max-age=3600',true);
+		$response->setHeader('Pragma', 'public',true);
+
+		$response->setHeader('Last-Modified',gmdate("D, d M Y H:i:s", $mtime) . " GMT");
+		$request = $this->getRequest();
+		$cacheDate = $request->getHeader('If-Modified-Since');
+		if( is_string($cacheDate) )
+		{
+			$client_mtime = @strtotime($cacheDate);
+			if( $client_mtime == $mtime)
+			{
+				$response->setRawHeader('HTTP/1.1 304 Not Modified');
+				$this->_helper->viewRenderer->setNoRender();
+				return;
+			}
+		}
 	}
 
 	public function localizeAction()
@@ -86,27 +120,86 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$language = $request->getParam('lng','en');
 		$this->view->fields = null;
-		if( $language != 'en' )
+
+		$translation_dir = realpath(dirname(__FILE__)).'/../models/'.self::DIRECTORY_LANGUAGES;
+		//$translation_dir = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
+		// get the correct language
+		$filename = $translation_dir.'/'.$language.'.php';
+		if( file_exists($filename) )
 		{
-			$translation_dir = realpath(dirname(__FILE__)).'/../models/'.self::DIRECTORY_LANGUAGES;
-			//$translation_dir = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
-			// get the correct language
-			$filename = $translation_dir.'/'.$language.'.php';
-			if( file_exists($filename) )
+			require_once $filename;
+			$mtime = @filemtime($filename);
+			$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
+			$this->view->language = $language;
+			$trclass = new KcTranslation();
+			$translation= array();
+			foreach ($trclass->lang as $english => $native )
 			{
-				require_once $filename;
-				$mtime = @filemtime($filename);
-				$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
-				$this->view->language = $language;
-				$trclass = new KcTranslation();
-				$translation= array();
-				foreach ($trclass->lang as $english => $native )
-				{
-					$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
-				}
-				$this->view->label = $translation;
+				$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
 			}
+			$this->view->label = $translation;
 		}
+
+	}
+
+	public function createtranslationsAction(){
+
+		$translation_dir = realpath(dirname(__FILE__).'/../models/'.self::DIRECTORY_LANGUAGES);
+		//$translation_dir = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
+		// get the correct language
+		$request = $this->getRequest();
+		$language = $request->getParam('language','en');
+		
+		if ( $language != 'en' )
+			include_once APPLICATION_PATH."/models/kcLanguages/$language.php";
+		else
+			include_once APPLICATION_PATH."/models/kcLanguages/it.php";
+		$class = new KcTranslation();
+		$items = $class->lang;
+		$en = array_keys($items);
+		
+		
+		unset($items[$en[0]]);
+		unset($items[$en[1]]);
+		unset($items[$en[2]]);
+		unset($items[$en[3]]);
+		unset($items[$en[4]]);
+		unset($items[$en[5]]);
+		unset($en[0]);
+		unset($en[1]);
+		unset($en[2]);
+		unset($en[3]);
+		unset($en[4]);
+		unset($en[5]);
+		
+		$this->view->keys = $en;
+		if( $language == 'en' )
+		{
+			foreach ($items as $key => $item ){
+				$items[$key]=$key;
+				
+			}
+				
+		}
+		$this->view->data = $items;
+		
+		$translation = new Zend_Translate( array(
+		        'adapter' => 'cvs',
+		        'content' => APPLICATION_PATH.'/language/kc-en_it.ini',
+		        'locale'  => 'auto',
+        		'scan' => Zend_Translate::LOCALE_DIRECTORY
+				));
+		
+		/*
+		$data = $this->render();
+		$response = $this->getResponse();
+		$data = $response->getBody();
+		$destination = APPLICATION_PATH.'/language/kc_'.$language.'.cvs';
+		$file = fopen($destination,'w+');
+		fwrite($file,$data);
+		fclose($file);
+		chmod($destination, 0664);
+		*/
 	}
 
 	public function browseAction()
@@ -114,7 +207,7 @@ class KcController extends Zend_Controller_Action
 
 		$request = $this->getRequest();
 		$params = $request->getParams();
-		
+
 		if( isset($this->_config->session) )
 		{
 			Zend_Session::setOptions($this->_config->session->toArray());
@@ -167,18 +260,18 @@ class KcController extends Zend_Controller_Action
 					$access[$key1][$key] = false;
 				}
 			}
-				
+
 		}
 
 			
-		$browser['access'] = Zend_Json::encode($access); 
+		$browser['access'] = Zend_Json::encode($access);
 		//'{"files":{"upload":true,"delete":true,"copy":true,"move":true,"rename":true},"dirs":{"create":true,"delete":true,"rename":true}}';
 		$front = Zend_Controller_Front::getInstance();
 
 
 		$kuki['domain'] = 'zfkc.local';//_.kuki.domain = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookieDomain']) ? >";
 		$kuki['path'] = '/';//_.kuki.path = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePath']) ? >";
-		$kuki['prefix'] = 'MKCFINDER_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
+		$kuki['prefix'] = 'ZFKC_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
 		$this->view->type = 'images';
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
@@ -197,7 +290,7 @@ class KcController extends Zend_Controller_Action
 		//$r = $this->render();
 		//$response = $this->getResponse();
 		//$response->setBody($r);
-		
+
 	}
 
 	public function browseinitAction()
@@ -227,7 +320,7 @@ class KcController extends Zend_Controller_Action
 		try {
 			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
-				
+
 			$message = $e->getMessage();
 			$response->appendBody(Zend_Json::encode(array('error' => $message)));
 			return ;
@@ -246,14 +339,14 @@ class KcController extends Zend_Controller_Action
 	public function thumbAction(){
 		$contextSwitch =$this->_helper->contextSwitch();
 		$contextSwitch->initContext();
-		
+
 		$this->_helper->viewRenderer->setNoRender();
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir',null);
 		$file_name = $request->getParam('file',null);
 		$default = true;
 		$lastcode = null;
-		
+
 		if( isset($dir) && isset($file_name) )
 		{
 			$file= $dir.'/'.$file_name;
@@ -261,9 +354,9 @@ class KcController extends Zend_Controller_Action
 			// check existence
 			try {
 				$file_real = Application_Model_kcBrowser::existFile(
-					$this->_uploadDir,$file);
+				$this->_uploadDir,$file);
 				$thumb_real = Application_Model_kcBrowser::existFile(
-					$this->_uploadDir.'/'.$this->_config->thumbsDir, $file);
+				$this->_uploadDir.'/'.$this->_config->thumbsDir, $file);
 				unset($default);
 			} catch (Exception $e){
 				$message = $e->getMessage();
@@ -273,7 +366,7 @@ class KcController extends Zend_Controller_Action
 				 */
 			}
 		}
-		
+
 		if( isset($default ) )
 		{
 			$ext = Application_Model_kclib_File::getExtension($file_name);
@@ -283,7 +376,7 @@ class KcController extends Zend_Controller_Action
 		{
 			$thumb = $thumb_real;
 		}
-		
+
 		$contextSwitch->addContext('tipo', array ('Content-Type'=>'image/png'));
 		readfile($thumb);
 
@@ -295,7 +388,7 @@ class KcController extends Zend_Controller_Action
 		//$this->_helper->json($data, array('enableJsonExprFinder' => true));
 		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
 		$this->_helper->json->sendJson($data);
-		
+
 	}
 
 	protected function getSessionDir(){

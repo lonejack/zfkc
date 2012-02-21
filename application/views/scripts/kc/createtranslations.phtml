@@ -1,0 +1,9 @@
+<?php
+header("Content-Type: text/html; charset=utf-8");
+$index = 0;
+foreach ($this->keys as $key )
+{
+	echo "\"$key\", \"{$this->data[$key]}\"\n";
+	$index++;
+}
+	

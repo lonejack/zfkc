@@ -61,6 +61,8 @@ class Application_Model_kclib_HttpCache {
         if ($headers !== null) foreach ($headers as $header) header($header);
         echo $content;
     }
+    
+        
 
   /** Check if given modification time is newer than client-side one. If not,
     * the method will tell the client to get the content from its own cache.

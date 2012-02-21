@@ -1,9 +1,5 @@
 <?php
-header("Content-Type: text/javascript");
-foreach ($this->headers as $header )
-	header($header);
 foreach ($this->files as $file)
 	require $file;
-
 ?>
 

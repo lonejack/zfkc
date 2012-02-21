@@ -3,13 +3,13 @@
 <head>
 <title>KCFinder: /<?php echo $this->session['dir'] ?></title>
 
-<link href="<?=$this->publicPath?>getcss.php?type=<?=$this->type ?>" rel="stylesheet" type="text/css" />
+<link href="/kc/style/type/<?=$this->type ?>" rel="stylesheet" type="text/css" />
 <link href="<?=$this->publicPath?>themes/<?=$this->browser['theme']?>/style.css" rel="stylesheet" type="text/css" />
 <script src="<?=$this->publicPath?>js/jquery.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.rightClick.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.drag.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/helper.js" type="text/javascript"></script>
-<script src="<?=$this->publicPath?>getjoiner" type="text/javascript"></script>
+<script src="<?=$this->publicPath?>getjoiner.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>localize.php?lng=<?php echo $this->language ?>" type="text/javascript"></script>
 
 
@@ -21,6 +21,7 @@
 <?php endif; ?>
 
 <script type="text/javascript">
+
 browser.version = "<?=$this->browser['version'] ?>";
 browser.support.chromeFrame = <?=$this->browser['cromeFrame'] ?>;
 browser.support.zip = <?=$this->browser['supportZip'] ?>;
