@@ -28,7 +28,7 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 			case 'js':
 				break;
 				
-			case 'localize.php':
+			case 'gettranslation.php':
 				$defaults['action'] = 'localize';
 				return $defaults;
 			case 'browse.php':

@@ -1,28 +1,7 @@
 <?php
-if( !isset($this->language ) )
+foreach ($this->data as $english => $native )
 {
-	header("Content-Type: text/javascript");
-}
-else
-{
-	header("Content-Type: text/javascript; charset={$this->language['_charset']}");
-}
-if(isset($this->headers))
-{
-	foreach ($this->headers as $header )
-	{
-		header($header);
-	}
-
-}
-
-if( isset($this->label ) )
-{
-	// out data
-	foreach ($this->label as $english => $native )
-	{
-		echo "browser.labels['" . $english . "']=\"" . $native . "\";";
-	}
+	echo "browser.labels['" . addslashes($english) . "']=\"" . addslashes($native) . "\";";
 }
 
 ?>

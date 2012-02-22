@@ -2,7 +2,8 @@
 
 class KcController extends Zend_Controller_Action
 {
-	const	DIRECTORY_LANGUAGES	= 'kcLanguages';
+	const DIRECTORY_LANGUAGES	= 'kcLanguages';
+	const DIR_LANGUAGES = '/language';
 	protected $_kcfinderDir;
 	protected $_realpath;
 	protected $_uploadDir;
@@ -120,25 +121,44 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$language = $request->getParam('lng','en');
 		$this->view->fields = null;
+		$locale_applied = $this->view->translator->getLocale();
 
-		$translation_dir = realpath(dirname(__FILE__)).'/../models/'.self::DIRECTORY_LANGUAGES;
-		//$translation_dir = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
+		$translation_dir = realpath(APPLICATION_PATH.self::DIR_LANGUAGES);
+		
 		// get the correct language
-		$filename = $translation_dir.'/'.$language.'.php';
-		if( file_exists($filename) )
-		{
-			require_once $filename;
-			$mtime = @filemtime($filename);
-			$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
-			$this->view->language = $language;
-			$trclass = new KcTranslation();
-			$translation= array();
-			foreach ($trclass->lang as $english => $native )
-			{
-				$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
-			}
-			$this->view->label = $translation;
+		$filename = $translation_dir.'/'.$locale_applied.'/kc.csv';
+		if( !file_exists($filename) ){
+			$filename = $translation_dir.'/en/kc.csv';
 		}
+		
+		$mtime = @filemtime($filename);
+		$request = $this->getRequest();
+		$cacheDate = $request->getHeader('If-Modified-Since');
+		$response = $this->getResponse();
+		if( is_string($cacheDate) )	{
+			$client_mtime = @strtotime($cacheDate);
+			if( $client_mtime == $mtime)
+			{
+				$response->setRawHeader('HTTP/1.1 304 Not Modified');
+				$this->_helper->viewRenderer->setNoRender();
+				return;
+			}
+		}
+		// render
+		
+		if (($handle = fopen($filename, "r")) !== FALSE) {
+			$data = array();
+			while (($row = fgetcsv($handle, 1000, ";")) !== FALSE) {
+				$data[$row[0]] = $row[1];
+			}
+			fclose($handle);
+		}
+		$this->view->data = $data;
+		
+		$response->setHeader('Content-Type', "text/javascript; charset=utf-8",true);
+		$response->setHeader('Cache-Control', 'public, max-age=3600',true);
+		$response->setHeader('Pragma', 'public',true);
+		$response->setHeader('Last-Modified',gmdate("D, d M Y H:i:s", $mtime) . " GMT");
 
 	}
 
@@ -153,7 +173,7 @@ class KcController extends Zend_Controller_Action
 		if ( $language != 'en' )
 			include_once APPLICATION_PATH."/models/kcLanguages/$language.php";
 		else
-			include_once APPLICATION_PATH."/models/kcLanguages/it.php";
+			include_once APPLICATION_PATH."/models/kcLanguages/bg.php";
 		$class = new KcTranslation();
 		$items = $class->lang;
 		$en = array_keys($items);
@@ -182,19 +202,14 @@ class KcController extends Zend_Controller_Action
 				
 		}
 		$this->view->data = $items;
-		
-		$translation = new Zend_Translate( array(
-		        'adapter' => 'cvs',
-		        'content' => APPLICATION_PATH.'/language/kc-en_it.ini',
-		        'locale'  => 'auto',
-        		'scan' => Zend_Translate::LOCALE_DIRECTORY
-				));
+
 		
 		/*
+		
 		$data = $this->render();
 		$response = $this->getResponse();
 		$data = $response->getBody();
-		$destination = APPLICATION_PATH.'/language/kc_'.$language.'.cvs';
+		$destination = APPLICATION_PATH.'/language/'.$language.'/kc.cvs';
 		$file = fopen($destination,'w+');
 		fwrite($file,$data);
 		fclose($file);
@@ -269,42 +284,28 @@ class KcController extends Zend_Controller_Action
 		$front = Zend_Controller_Front::getInstance();
 
 
-		$kuki['domain'] = 'zfkc.local';//_.kuki.domain = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookieDomain']) ? >";
-		$kuki['path'] = '/';//_.kuki.path = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePath']) ? >";
-		$kuki['prefix'] = 'ZFKC_';//_.kuki.prefix = "<?php echo Admin_Model_Kclib_Text::jsValue($this->config['cookiePrefix']) ? >";
+		$kuki['domain'] = 'zfkc.local';
+		$kuki['path'] = '/';
+		$kuki['prefix'] = 'ZFKC_';
 		$this->view->type = 'images';
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
 		$this->view->publicPath = $this->_config->kcPath;
-		$this->view->label = $this->_getLabels($language);
-
-
-		$trclass = new KcTranslation();
-		$translation= array();
-		foreach ($trclass->lang as $english => $native )
-		{
-			$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
-		}
-		$this->view->label = $translation;
-		//$this->view->headScript()->appendFile($this->_config->kcPath.'js/jquery.js','text/javascript');
-		//$r = $this->render();
-		//$response = $this->getResponse();
-		//$response->setBody($r);
 
 	}
 
 	public function browseinitAction()
 	{
-
-		$request = $this->getRequest();
-
+		
 		$mtime = @filemtime(__FILE__);
-		$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
 		$uploadDir = $this->_uploadDir;
 		$typeDir = $this->_uploadDir.self::TYPE;
-
-		$this->view->charset = "utf-8";
-		$this->view->data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir());
+		
+		$response = $this->getResponse();
+		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
+		
+		$data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir());
+		$this->_helper->json->sendJson($data);
 	}
 
 	public function chdirAction()
@@ -313,27 +314,22 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
 
-		// direct answer, don not render the view
-		$this->_helper->viewRenderer->setNoRender();
-		$response = $this->getResponse();
-
 		try {
 			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
 
 			$message = $e->getMessage();
-			$response->appendBody(Zend_Json::encode(array('error' => $message)));
+			$this->_helper->json->sendJson(array('error' => $message));
 			return ;
 		}
 		$this->setSessionDir($dir);
 		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
 		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
-		$answer = array (
+		$data = array (
 			'files' => $files,
 			'dirWritable' => $dirWritable			
 		);
-		$response->appendBody(Zend_Json::encode($answer));
-
+		$this->_helper->json->sendJson($data);
 	}
 
 	public function thumbAction(){
@@ -376,8 +372,12 @@ class KcController extends Zend_Controller_Action
 		{
 			$thumb = $thumb_real;
 		}
-
-		$contextSwitch->addContext('tipo', array ('Content-Type'=>'image/png'));
+		$ext = strtolower( Application_Model_kclib_File::getExtension($thumb) );
+		if( $ext != 'png' )
+			$ext = 'jpeg';
+		
+		$response = $this->getResponse();
+		$response->setHeader('Content-Type', "image/$ext",true);
 		readfile($thumb);
 
 	}
@@ -385,7 +385,6 @@ class KcController extends Zend_Controller_Action
 	public function expandAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
-		//$this->_helper->json($data, array('enableJsonExprFinder' => true));
 		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
 		$this->_helper->json->sendJson($data);
 
@@ -406,34 +405,7 @@ class KcController extends Zend_Controller_Action
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
 		$zf_kceditor->sessionDir = $dir;
 	}
-
-
-	protected function _getLabels($language)
-	{
-
-		if( $language != 'en' )
-		{
-			$translation_dir = realpath(dirname(__FILE__)).'/../models/'.self::DIRECTORY_LANGUAGES;
-			//$translation_dir = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.self::DIRECTORY_LANGUAGES;
-			// get the correct language
-			$filename = $translation_dir.'/'.$language.'.php';
-			if( file_exists($filename) )
-			{
-				require_once $filename;
-				$mtime = @filemtime($filename);
-				$this->view->headers = Application_Model_kclib_HttpCache::checkMTime($mtime);
-				$this->view->language = $language;
-				$trclass = new KcTranslation();
-				$translation= array();
-				foreach ($trclass->lang as $english => $native )
-				{
-					$translation[Application_Model_kclib_Text::jsValue($english)] =Application_Model_kclib_Text::jsValue($native);
-				}
-
-			}
-		}
-		return $translation;
-	}
+	
 }
 
 

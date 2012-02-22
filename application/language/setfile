@@ -1,0 +1,24 @@
+#! /bin/bash
+mv bg/*    bg/kc.csv    
+mv ca/*    ca/kc.csv    
+mv da/*    da/kc.csv    
+mv de/*    de/kc.csv    
+mv el/*    el/kc.csv    
+mv en/*    en/kc.csv    
+mv es/*    es/kc.csv    
+mv fa/*    fa/kc.csv    
+mv fr/*    fr/kc.csv    
+mv hu/*    hu/kc.csv    
+mv it/*    it/kc.csv    
+mv ja/*    ja/kc.csv    
+mv lt/*    lt/kc.csv    
+mv nl/*    nl/kc.csv    
+mv no/*    no/kc.csv    
+mv pl/*    pl/kc.csv    
+mv pt/*    pt/kc.csv    
+mv pt_BR/* pt_BR/kc.csv 
+mv ru/*    ru/kc.csv    
+mv sk/*    sk/kc.csv    
+mv tr/*    tr/kc.csv    
+mv vi/*    vi/kc.csv    
+mv zh_CN/* zh_CN/kc.csv 
