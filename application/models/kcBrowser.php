@@ -187,7 +187,9 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
             return false;
 
         // Save thumbnail
-        return $gd->imagejpeg($destination, self::$config['jpegQuality']);
+        $gd->imagejpeg($destination, self::$config['jpegQuality']);
+        chmod($destination, self::$config['filePerms']);
+        return ;
 		
 	}
 	
@@ -791,7 +793,7 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 				'mtime' => $stat['mtime'],
 				'date' => @strftime(self::$config['format_date'], $stat['mtime']),
 				'readable' => is_readable($file),
-	            'writable' => Application_Model_kclib_File::isWritable($file),
+	            'writable' => Application_Model_kclib_File::isWritable($file)?'true':'false'	,
 				'bigIcon' => $bigIcon,
 				'smallIcon' => $smallIcon,
 				'thumb' => $thumb,
@@ -854,14 +856,14 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		$directory = realpath($upload_dir.'/'. $dir);
 		if( strncmp($upload_dir, $directory, strlen($upload_dir))  )
 		{
-			throw new Exception('Invalid request!');
+			throw new Exception('Invalid request!', 3);
 		}
 		
 		if ( !is_dir($directory) )
-			throw new Exception('Inexistant folder.');
+			throw new Exception('Inexistant folder.', 4);
 		
 		if( !is_readable($directory) )
-			throw new Exception('Inaccessible folder.');
+			throw new Exception('Inaccessible folder.', 5);
 		
 		return $directory;
 	}

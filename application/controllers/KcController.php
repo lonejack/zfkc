@@ -9,8 +9,6 @@ class KcController extends Zend_Controller_Action
 	protected $_uploadDir;
 	protected $_uploadUrl;
 	const TYPE = '/images';
-	protected $_imagesAbsolutePath;
-	protected $_imagesRelativePath;
 	protected $_types;
 	protected $_config;
 
@@ -18,16 +16,12 @@ class KcController extends Zend_Controller_Action
 	public function init()
 	{
 		/* Initialize action controller here */
-
 		$this->_config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
-		//$this->_config->dirPerms = octdec($this->_config->dirPerms);
-		//$this->_config->filePerms = octdec($this->_config->filePerms);
 
 		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_config->uploadURL;
 		$this->_uploadUrl = $this->_config->imagesDir;
-		$this->_imagesAbsolutePath = $this->_config->publicPath.$this->_config->imagesDir;
-		$this->_imagesRelativePath = $this->_config->imagesDir;
+		
 		$request = $this->getRequest();
 
 		// define types we're working on
@@ -154,11 +148,11 @@ class KcController extends Zend_Controller_Action
 			fclose($handle);
 		}
 		$this->view->data = $data;
-		
+		$response->clearHeader('Expires');
 		$response->setHeader('Content-Type', "text/javascript; charset=utf-8",true);
 		$response->setHeader('Cache-Control', 'public, max-age=3600',true);
 		$response->setHeader('Pragma', 'public',true);
-		$response->setHeader('Last-Modified',gmdate("D, d M Y H:i:s", $mtime) . " GMT");
+		$response->setHeader('Last-Modified',gmdate("D, d M Y H:i:s", $mtime) . " GMT",true);
 
 	}
 
@@ -204,17 +198,23 @@ class KcController extends Zend_Controller_Action
 		$this->view->data = $items;
 
 		
-		/*
 		
-		$data = $this->render();
+/*		
+		$this->render();
 		$response = $this->getResponse();
 		$data = $response->getBody();
-		$destination = APPLICATION_PATH.'/language/'.$language.'/kc.cvs';
+		$directory = APPLICATION_PATH.'/language/'.$language;
+		$destination = $directory.'/kc.csv';
+		if(!is_dir($directory)) {
+			mkdir($directory);
+			chmod($directory, 0775);
+		}	
+		
 		$file = fopen($destination,'w+');
 		fwrite($file,$data);
 		fclose($file);
 		chmod($destination, 0664);
-		*/
+*/		
 	}
 
 	public function browseAction()
@@ -319,7 +319,10 @@ class KcController extends Zend_Controller_Action
 		} catch (Exception $e){
 
 			$message = $e->getMessage();
-			$this->_helper->json->sendJson(array('error' => $message));
+			/*
+			 * TODO: store the message in log
+			 */
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
 			return ;
 		}
 		$this->setSessionDir($dir);
@@ -327,14 +330,14 @@ class KcController extends Zend_Controller_Action
 		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
 		$data = array (
 			'files' => $files,
-			'dirWritable' => $dirWritable			
+			'dirWritable' => $dirWritable?'true':'false'			
 		);
 		$this->_helper->json->sendJson($data);
 	}
-
+	
 	public function thumbAction(){
-		$contextSwitch =$this->_helper->contextSwitch();
-		$contextSwitch->initContext();
+		//$contextSwitch =$this->_helper->contextSwitch();
+		//$contextSwitch->initContext();
 
 		$this->_helper->viewRenderer->setNoRender();
 		$request = $this->getRequest();
@@ -387,7 +390,52 @@ class KcController extends Zend_Controller_Action
 		$dir = $request->getParam('dir','');
 		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
 		$this->_helper->json->sendJson($data);
-
+	}
+	
+	public function renameAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$oldName = $request->getParam('file');
+		
+		$newName = $request->getParam('newName');
+		$allowed = $this->_config->access->files->rename;
+		
+		if( !isset($dir) || !isset($oldName) || !isset($newName) || !$allowed ) {
+			$this->_helper->json->sendJson(	array('error' => $this->view->translator->_('Unknown error.')) );
+			return;
+		}
+		
+		try {
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir.'/'.$dir, $oldName);
+		} catch (Exception $e){
+			$message = $e->getMessage();
+			/*
+			 * TODO: store the message in log
+			*/
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			return ;
+		}
+		if( !is_writable($filename) ){
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			return;
+		}
+		// now check the new name
+		$new = $directory.'/'.$newName;
+		if( is_file($new)){
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('A file or folder with that name already exists.')));
+			return;
+		}
+		
+		if( rename($filename, $new) ){
+			// now rename the thumb
+			$thumb_old = $this->_uploadDir.'/.thumbs/'.$dir.'/'.$oldName;	
+			$thumb_new = $this->_uploadDir.'/.thumbs/'.$dir.'/'.$newName	;
+			rename($thumb_old,$thumb_new);
+		}
+			
+		$data = array();
+		$this->_helper->json->sendJson($data);
 	}
 
 	protected function getSessionDir(){
