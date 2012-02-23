@@ -392,6 +392,38 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->json->sendJson($data);
 	}
 	
+	public function deleteAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$file = $request->getParam('file');
+		$allowed = $this->_config->access->files->delete;
+		if( !isset($dir) || !isset($file) || !$allowed ) {
+			$this->_helper->json->sendJson(	array('error' => $this->view->translator->_('Unknown error.')) );
+			return;
+		}
+		try {
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir.'/'.$dir, $file);
+		} catch (Exception $e){
+			$message = $e->getMessage();
+			/*
+			 * TODO: log the message
+			*/
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			return ;
+		}
+		
+		if( !is_writable($filename) ){
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			return;
+		}
+		if( unlink($filename) ) {
+			unlink($this->_uploadDir.'/.thumbs/'.$dir.'/'.$file);
+		}
+		$this->_helper->json->sendJson(array('result'=>true));
+		
+	}
+	
 	public function renameAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -411,7 +443,7 @@ class KcController extends Zend_Controller_Action
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			/*
-			 * TODO: store the message in log
+			 * TODO: log the message
 			*/
 			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
 			return ;
