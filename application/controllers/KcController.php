@@ -466,8 +466,72 @@ class KcController extends Zend_Controller_Action
 			rename($thumb_old,$thumb_new);
 		}
 			
-		$data = array();
+		$data = array('result'=>true);
 		$this->_helper->json->sendJson($data);
+	}
+	
+	public function copyclipboardAction($doCopy=true){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$files = $request->getParam('files');
+		$allowed = $this->_config->access->files->copy;
+		
+		try {
+			if( !isset($dir) || !isset($files) || !$allowed )
+				throw new Exception('Invalid parameters!',-1);
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
+		} catch (Exception $e){
+			$message = $e->getMessage();
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			return ;
+		}
+		
+		if( !is_writable($this->_uploadDir.'/'.$dir) ){
+			// this should be log to the admin
+			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			return;
+		}
+		$errors = false;
+		foreach ($filename as $fileOrig) {
+			$fileDest = $this->_uploadDir.'/'.$dir.'/'.basename($fileOrig);
+			if( $doCopy ){
+				if( true != copy ( $fileOrig, $fileDest ) ) {
+					$errors=true;
+				}
+			}
+			else {
+				if( true != rename ( $fileOrig, $fileDest ) ) {
+					$errors=true;
+				}
+			}
+				
+		}
+		foreach ($files as $fileOrig) {
+			$thumbDest = $this->_uploadDir.'/.thumbs/'.$dir.'/'.basename($fileOrig);
+			$thumbOrig = $this->_uploadDir.'/.thumbs/'.$fileOrig;
+			if( $doCopy ){
+				if( true != copy ( $thumbOrig, $thumbDest) ) {
+					$errors=true;
+				}
+			}
+			else {
+				if( true != rename ( $thumbOrig, $thumbDest ) ) {
+					$errors=true;
+				}
+			}
+		}
+		if($errors)	{
+			$data = array('error' => $this->view->translator->_('Unknown error.'));
+		}
+		else {
+			$data = array('result'=>true);
+		}
+		$this->_helper->json->sendJson($data);
+	}
+	
+	protected function moveclipboardAction(){
+		$this->copyclipboardAction(false);
 	}
 
 	protected function getSessionDir(){

@@ -834,22 +834,35 @@ class Application_Model_kcBrowser extends Application_Model_kcUploader {
 		return $paths;
 	}
 	
-	static function existFile( $upload_dir, $name ) {
-		$file = realpath($upload_dir.'/'. $name);
-		if( strncmp($upload_dir, $file, strlen($upload_dir))  )
-		{
-			throw new Exception('Invalid request!',-1);
+	static function existFile( $upload_dir, $names ) {
+		if(is_string($names)) {
+			$names = array($names);
+			$retString = true;
 		}
+		$list = array();
+		foreach($names as $name) {
+			$file = realpath($upload_dir.'/'. $name);
+			$list[]=$file;
+			
+			if( strncmp($upload_dir, $file, strlen($upload_dir))  )
+			{
+				throw new Exception('Invalid request!',-1);
+			}
 
-		if ( !is_file($file) )
-		{
-			throw new Exception("file $name is Inexistant!",1);
+			if ( !is_file($file) )
+			{
+				throw new Exception("file $name is Inexistant!",1);
+			}
+			if( !is_readable($file) )
+			{
+				throw new Exception("file $name is unreadable",2);
+			}
+				
 		}
-		if( !is_readable($file) )
-		{
-			throw new Exception("file $name is unreadable",2);
+		if( isset($retString) ) {
+			$list = $list[0];
 		}
-		return $file;
+		return $list;
 	}
 	
 	static function checkDir( $upload_dir, $dir ) {
