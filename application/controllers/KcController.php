@@ -39,6 +39,50 @@ class KcController extends Zend_Controller_Action
 
 
 	}
+	
+	public function renamedirAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$newName = $request->getParam('newName');
+		$allowed = $this->_config->access->dirs->rename;
+		if( !isset($dir) || !isset($newName) ||!$allowed ){
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+		if (!strlen($newName)){
+			$this->_helper->json->sendJson(array('error' => "Please enter new folder name."));
+			return ;
+		}
+		
+		if (preg_match('/[\/\\\\]/s', $newName)) {
+			$this->_helper->json->sendJson(array('error' => 'Unallowable characters in folder name.'));
+			return ;
+		}
+		
+		if (substr($newName, 0, 1) == "."){
+			$this->_helper->json->sendJson(array('error' => "Folder name shouldn't begins with '.'"));
+			return ;
+		}
+		$pathOrig = $this->_uploadDir .'/'. $dir;
+		$pathDest = $this->_uploadDir .'/'. dirname($dir) . "/$newName";
+		if (!@rename($pathOrig, $pathDest)){
+			$this->_helper->json->sendJson(array('error' => "Cannot rename the folder."));
+			return ;
+		}
+		// change the name of thumbs directory
+		$pathOrig = $this->_uploadDir .'/.thumbs/'. $dir;
+		if( is_dir($pathOrig)) {
+			$pathDest = $this->_uploadDir .'/.thumbs/'. dirname($dir) . "/$newName";
+			if( !@rename($pathOrig, $pathDest) ){
+				// this should be log to the admin
+				$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+				return;
+			}
+		}
+		
+		$data = array('name'=>$newName);
+		$this->_helper->json->sendJson($data);
+	}
 
 	public function indexAction()
 	{
@@ -322,7 +366,7 @@ class KcController extends Zend_Controller_Action
 			/*
 			 * TODO: store the message in log
 			 */
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		$this->setSessionDir($dir);
@@ -398,7 +442,7 @@ class KcController extends Zend_Controller_Action
 		$file = $request->getParam('file');
 		$allowed = $this->_config->access->files->delete;
 		if( !isset($dir) || !isset($file) || !$allowed ) {
-			$this->_helper->json->sendJson(	array('error' => $this->view->translator->_('Unknown error.')) );
+			$this->_helper->json->sendJson(	array('error' => 'Unknown error.') );
 			return;
 		}
 		try {
@@ -409,12 +453,12 @@ class KcController extends Zend_Controller_Action
 			/*
 			 * TODO: log the message
 			*/
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		
 		if( !is_writable($filename) ){
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return;
 		}
 		if( unlink($filename) ) {
@@ -433,7 +477,7 @@ class KcController extends Zend_Controller_Action
 		$allowed = $this->_config->access->files->rename;
 		
 		if( !isset($dir) || !isset($oldName) || !isset($newName) || !$allowed ) {
-			$this->_helper->json->sendJson(	array('error' => $this->view->translator->_('Unknown error.')) );
+			$this->_helper->json->sendJson(	array('error' => 'Unknown error.')) ;
 			return;
 		}
 		
@@ -445,17 +489,17 @@ class KcController extends Zend_Controller_Action
 			/*
 			 * TODO: log the message
 			*/
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		if( !is_writable($filename) ){
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return;
 		}
 		// now check the new name
 		$new = $directory.'/'.$newName;
 		if( is_file($new)){
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('A file or folder with that name already exists.')));
+			$this->_helper->json->sendJson(array('error' => 'A file or folder with that name already exists.'));
 			return;
 		}
 		
@@ -483,46 +527,33 @@ class KcController extends Zend_Controller_Action
 			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
 		} catch (Exception $e){
 			$message = $e->getMessage();
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		
 		if( !is_writable($this->_uploadDir.'/'.$dir) ){
 			// this should be log to the admin
-			$this->_helper->json->sendJson(array('error' => $this->view->translator->_('Unknown error.')));
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return;
 		}
 		$errors = false;
+		$command = $doCopy? 'copy': 'rename';
 		foreach ($filename as $fileOrig) {
 			$fileDest = $this->_uploadDir.'/'.$dir.'/'.basename($fileOrig);
-			if( $doCopy ){
-				if( true != copy ( $fileOrig, $fileDest ) ) {
+				if( true != $command ( $fileOrig, $fileDest ) ) {
 					$errors=true;
 				}
-			}
-			else {
-				if( true != rename ( $fileOrig, $fileDest ) ) {
-					$errors=true;
-				}
-			}
 				
 		}
 		foreach ($files as $fileOrig) {
 			$thumbDest = $this->_uploadDir.'/.thumbs/'.$dir.'/'.basename($fileOrig);
 			$thumbOrig = $this->_uploadDir.'/.thumbs/'.$fileOrig;
-			if( $doCopy ){
-				if( true != copy ( $thumbOrig, $thumbDest) ) {
-					$errors=true;
-				}
-			}
-			else {
-				if( true != rename ( $thumbOrig, $thumbDest ) ) {
-					$errors=true;
-				}
+			if( true != $command ( $thumbOrig, $thumbDest) ) {
+				$errors=true;
 			}
 		}
 		if($errors)	{
-			$data = array('error' => $this->view->translator->_('Unknown error.'));
+			$data = array('error' => 'Unknown error.');
 		}
 		else {
 			$data = array('result'=>true);
