@@ -36,9 +36,9 @@ class KcController extends Zend_Controller_Action
 
 		$layout = Zend_Layout::getMvcInstance();
 		$layout->disableLayout();
-
-
 	}
+	
+	
 	
 	public function renamedirAction(){
 		$request = $this->getRequest();
@@ -81,6 +81,42 @@ class KcController extends Zend_Controller_Action
 		}
 		
 		$data = array('name'=>$newName);
+		$this->_helper->json->sendJson($data);
+	}
+	
+	public function deletedirAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		
+		$allowed = $this->_config->access->dirs->delete;
+		if( !isset($dir)  ||!$allowed ){
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+		try {
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+		} catch (Exception $e){
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+		
+		if (!Application_Model_kclib_Dir::isWritable($directory)){
+			$this->_helper->json->sendJson(array('error' => "Cannot delete the folder."));
+		}
+		
+		$thumbDir = $this->_uploadDir .'/.thumbs/'. $dir;
+		if (is_dir($thumbDir)) {
+			Application_Model_kclib_Dir::prune($thumbDir);
+		}
+		
+		$result = !Application_Model_kclib_Dir::prune($directory, false);
+		if( $result === true ) {
+			$data = array('result'=>true);
+		} 
+		else {
+			$data = array(	'error'	=>	"Failed to delete {count} files/folders.",
+							'count' => 	count($result)	);
+		}
 		$this->_helper->json->sendJson($data);
 	}
 
