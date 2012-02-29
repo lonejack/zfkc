@@ -38,8 +38,135 @@ class KcController extends Zend_Controller_Action
 		$layout->disableLayout();
 	}
 	
+	public function indexAction()
+	{
+		// action body
+	}
 	
+	public function thumbAction(){
+		//$contextSwitch =$this->_helper->contextSwitch();
+		//$contextSwitch->initContext();
 	
+		$this->_helper->viewRenderer->setNoRender();
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir',null);
+		$file_name = $request->getParam('file',null);
+		$default = true;
+		$lastcode = null;
+	
+		if( isset($dir) && isset($file_name) )
+		{
+			$file= $dir.'/'.$file_name;
+	
+			// check existence
+			try {
+				$file_real = Application_Model_kcBrowser::existFile(
+						$this->_uploadDir,$file);
+				$thumb_real = Application_Model_kcBrowser::existFile(
+						$this->_uploadDir.'/'.$this->_config->thumbsDir, $file);
+				unset($default);
+			} catch (Exception $e){
+				$message = $e->getMessage();
+				/**
+				 * TODO: check if file exist and thumb doesn't exist
+				 * and sent this case to the log
+				 */
+			}
+		}
+	
+		if( isset($default ) )
+		{
+			$ext = Application_Model_kclib_File::getExtension($file_name);
+			$thumb = "{$this->_realpath}/themes/{$this->_config->theme}/img/files/big/$ext.png";
+		}
+		else
+		{
+			$thumb = $thumb_real;
+		}
+		$ext = strtolower( Application_Model_kclib_File::getExtension($thumb) );
+		if( $ext != 'png' )
+			$ext = 'jpeg';
+	
+		$response = $this->getResponse();
+		$response->setHeader('Content-Type', "image/$ext",true);
+		readfile($thumb);
+	
+	}
+	
+	public function expandAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir','');
+		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
+		$this->_helper->json->sendJson($data);
+	}
+	
+	public function chdirAction()
+	{
+	
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir','');
+	
+		try {
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+		} catch (Exception $e){
+	
+			$message = $e->getMessage();
+			/*
+			 * TODO: store the message in log
+			*/
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+		$this->setSessionDir($dir);
+		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
+		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
+		$data = array (
+				'files' => $files,
+				'dirWritable' => $dirWritable?'true':'false'
+		);
+		$this->_helper->json->sendJson($data);
+	}
+	
+	public function newdirAction(){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$newDir = $request->getParam('newDir');
+		$allowed = $this->_config->access->dirs->create;
+		if( !isset($dir) || !isset($newDir) || !$allowed ){
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+		$newDir = trim($newDir);
+		if (!strlen($newDir)) {
+			$this->_helper->json->sendJson(array('error' => "Please enter new folder name."));
+			return ;
+		}
+	
+		if (preg_match('/[\/\\\\]/s', $newDir)){
+			$this->_helper->json->sendJson(array('error' => "Unallowable characters in folder name."));
+			return ;
+		}
+		if (substr($newDir, 0, 1) == "."){
+			$this->_helper->json->sendJson(array('error' => "Folder name shouldn't begins with '.'"));
+			return ;
+		}
+		$dir1 = $this->_uploadDir.'/'.$dir.'/'.$newDir;
+		if (file_exists($dir1)) {
+			$this->_helper->json->sendJson(array('error' => "A file or folder with that name already exists."));
+			return ;
+		}
+		if (!@mkdir($dir1,Application_Model_kcBrowser::$config['dirPerms'])) {
+			$msg = $this->view->translator->_("Cannot create {dir} folder.");
+			$msg = str_replace("{dir}", $newDir, $msg);
+			$data = array('error' => $msg);
+		}
+		else{
+			$data = array('result'=>true);
+		}
+		$this->_helper->json->sendJson($data);
+	
+		return true;
+	}
 	public function renamedirAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -83,7 +210,7 @@ class KcController extends Zend_Controller_Action
 		$data = array('name'=>$newName);
 		$this->_helper->json->sendJson($data);
 	}
-	
+		
 	public function deletedirAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -119,17 +246,74 @@ class KcController extends Zend_Controller_Action
 		}
 		$this->_helper->json->sendJson($data);
 	}
-
-	public function indexAction()
-	{
-		// action body
+	
+	public function copyclipboardAction($doCopy=true){
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$files = $request->getParam('files');
+		$allowed = $this->_config->access->files->copy;
+	
+		try {
+			if( !isset($dir) || !isset($files) || !$allowed )
+				throw new Exception('Invalid parameters!',-1);
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
+		} catch (Exception $e){
+			$message = $e->getMessage();
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+	
+		if( !is_writable($this->_uploadDir.'/'.$dir) ){
+			// this should be log to the admin
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return;
+		}
+		$errors = false;
+		$command = $doCopy? 'copy': 'rename';
+		foreach ($filename as $fileOrig) {
+			$fileDest = $this->_uploadDir.'/'.$dir.'/'.basename($fileOrig);
+			if( true != $command ( $fileOrig, $fileDest ) ) {
+				$errors=true;
+			}
+	
+		}
+		foreach ($files as $fileOrig) {
+			$thumbDest = $this->_uploadDir.'/.thumbs/'.$dir.'/'.basename($fileOrig);
+			$thumbOrig = $this->_uploadDir.'/.thumbs/'.$fileOrig;
+			if( true != $command ( $thumbOrig, $thumbDest) ) {
+				$errors=true;
+			}
+		}
+		if($errors)	{
+			$data = array('error' => 'Unknown error.');
+		}
+		else {
+			$data = array('result'=>true);
+		}
+		$this->_helper->json->sendJson($data);
 	}
-
-	public function testAction()
-	{
-		// action body
+	
+	public function moveclipboardAction(){
+		$this->copyclipboardAction(false);
 	}
-
+	
+	public function removeclipboardAction(){
+		$request = $this->getRequest();
+		$files = $request->getParam('files');
+		$allowed = $this->_config->access->files->delete;
+		try {
+			if( !isset($files) || !count($files) || !$allowed )
+				throw new Exception('Invalid parameters!',-1);
+			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
+		} catch (Exception $e){
+			$message = $e->getMessage();
+			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
+			return ;
+		}
+	}
+	
 	public function styleAction()
 	{
 		$path = realpath(dirname(__FILE__).'/../views/scripts/kc/style.phtml');
@@ -388,90 +572,6 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->json->sendJson($data);
 	}
 
-	public function chdirAction()
-	{
-
-		$request = $this->getRequest();
-		$dir = $request->getParam('dir','');
-
-		try {
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
-		} catch (Exception $e){
-
-			$message = $e->getMessage();
-			/*
-			 * TODO: store the message in log
-			 */
-			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
-			return ;
-		}
-		$this->setSessionDir($dir);
-		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
-		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
-		$data = array (
-			'files' => $files,
-			'dirWritable' => $dirWritable?'true':'false'			
-		);
-		$this->_helper->json->sendJson($data);
-	}
-	
-	public function thumbAction(){
-		//$contextSwitch =$this->_helper->contextSwitch();
-		//$contextSwitch->initContext();
-
-		$this->_helper->viewRenderer->setNoRender();
-		$request = $this->getRequest();
-		$dir = $request->getParam('dir',null);
-		$file_name = $request->getParam('file',null);
-		$default = true;
-		$lastcode = null;
-
-		if( isset($dir) && isset($file_name) )
-		{
-			$file= $dir.'/'.$file_name;
-
-			// check existence
-			try {
-				$file_real = Application_Model_kcBrowser::existFile(
-				$this->_uploadDir,$file);
-				$thumb_real = Application_Model_kcBrowser::existFile(
-				$this->_uploadDir.'/'.$this->_config->thumbsDir, $file);
-				unset($default);
-			} catch (Exception $e){
-				$message = $e->getMessage();
-				/**
-				 * TODO: check if file exist and thumb doesn't exist
-				 * and sent this case to the log
-				 */
-			}
-		}
-
-		if( isset($default ) )
-		{
-			$ext = Application_Model_kclib_File::getExtension($file_name);
-			$thumb = "{$this->_realpath}/themes/{$this->_config->theme}/img/files/big/$ext.png";
-		}
-		else
-		{
-			$thumb = $thumb_real;
-		}
-		$ext = strtolower( Application_Model_kclib_File::getExtension($thumb) );
-		if( $ext != 'png' )
-			$ext = 'jpeg';
-		
-		$response = $this->getResponse();
-		$response->setHeader('Content-Type', "image/$ext",true);
-		readfile($thumb);
-
-	}
-
-	public function expandAction(){
-		$request = $this->getRequest();
-		$dir = $request->getParam('dir','');
-		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
-		$this->_helper->json->sendJson($data);
-	}
-	
 	public function deleteAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -550,57 +650,7 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->json->sendJson($data);
 	}
 	
-	public function copyclipboardAction($doCopy=true){
-		$request = $this->getRequest();
-		$dir = $request->getParam('dir');
-		$files = $request->getParam('files');
-		$allowed = $this->_config->access->files->copy;
-		
-		try {
-			if( !isset($dir) || !isset($files) || !$allowed )
-				throw new Exception('Invalid parameters!',-1);
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
-			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
-		} catch (Exception $e){
-			$message = $e->getMessage();
-			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
-			return ;
-		}
-		
-		if( !is_writable($this->_uploadDir.'/'.$dir) ){
-			// this should be log to the admin
-			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
-			return;
-		}
-		$errors = false;
-		$command = $doCopy? 'copy': 'rename';
-		foreach ($filename as $fileOrig) {
-			$fileDest = $this->_uploadDir.'/'.$dir.'/'.basename($fileOrig);
-				if( true != $command ( $fileOrig, $fileDest ) ) {
-					$errors=true;
-				}
-				
-		}
-		foreach ($files as $fileOrig) {
-			$thumbDest = $this->_uploadDir.'/.thumbs/'.$dir.'/'.basename($fileOrig);
-			$thumbOrig = $this->_uploadDir.'/.thumbs/'.$fileOrig;
-			if( true != $command ( $thumbOrig, $thumbDest) ) {
-				$errors=true;
-			}
-		}
-		if($errors)	{
-			$data = array('error' => 'Unknown error.');
-		}
-		else {
-			$data = array('result'=>true);
-		}
-		$this->_helper->json->sendJson($data);
-	}
 	
-	protected function moveclipboardAction(){
-		$this->copyclipboardAction(false);
-	}
-
 	protected function getSessionDir(){
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
