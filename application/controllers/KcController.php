@@ -305,13 +305,41 @@ class KcController extends Zend_Controller_Action
 		try {
 			if( !isset($files) || !count($files) || !$allowed )
 				throw new Exception('Invalid parameters!',-1);
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
-			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
+			Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
+		
+		$error = array();
+		foreach($files as $file) {
+			$file = Application_Model_kclib_Path::normalize($file);
+			if (substr($file, 0, 1) == ".") 
+				continue;
+			//$type = explode("/", $file);
+			//$type = $type[0];
+			//if ($type != $this->type) continue;
+			$filepath = $this->_uploadDir."/$file";
+			$thumbpath = $this->_uploadDir."/.thumbs/$file";
+			$base = basename($file);
+			$replace = array('file' => $base);
+			if (!is_file($filepath))
+				$error[$filepath] = "The file '{file}' does not exist.";
+			elseif (!@unlink($filepath))
+				$error[$filepath] = "Cannot delete '{file}'.";
+			if (is_file($thumbpath)) 
+				@unlink($thumbpath);
+		}
+		if (count($error)) {
+			$return = array();
+			foreach ($error as $file => $val) {
+				$message = $this->view->translator($val);
+				$return[] = str_replace("{file}", $file, $message);
+			}
+			return $this->_helper->json->sendJson(array('error' => $return));
+		}
+		return $this->_helper->json->sendJson(array('result' => true));
 	}
 	
 	public function styleAction()
