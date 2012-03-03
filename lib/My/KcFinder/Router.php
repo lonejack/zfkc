@@ -41,9 +41,9 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 					$jump = array(
 						'chDir'		=> 'chdir',
 						'init'		=> 'browseinit',
-						'cp_cbd'	=> 'copyclipboard',
-						'mv_cbd'	=> 'moveclipboard',
-						'rm_cbd'	=> 'removeclipboard'
+						'cp_cbd'	=> 'copycbd',
+						'mv_cbd'	=> 'movecbd',
+						'rm_cbd'	=> 'removecbd'
 					);
 					
 					if( array_key_exists($params['act'], $jump) )
