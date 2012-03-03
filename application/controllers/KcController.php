@@ -465,6 +465,29 @@ class KcController extends Zend_Controller_Action
 		unlink($file);
 	}
 	
+	public function downloadclipboardAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		$request = $this->getRequest();
+		$files = $request->getParam('files');
+		$allowed = !$this->_config->access->files->denyZipDownload;
+		$hiddens = $this->_kcfiles->filterHidden($files);
+		$filespath = $this->_kcfiles->prepend($this->_uploadDir.'/',$files);
+		$readable = $this->_kcfiles->checkReadable($filespath);
+		if ( !isset($files) || !$allowed || $hiddens || !$readable){
+			return $this->_helper->json->sendJson(array('error' => "Unknown error."));
+		}
+		//$filename = basename($dir) . ".zip";
+		$file = $this->_kcfiles->getTemporaryFileName($this->_uploadDir, 'zip');
+		$this->_kcfiles->zipList($filespath, $file);
+		$response = $this->getResponse();
+		$response->clearAllHeaders();
+		$response->setHeader('Content-Type', 'application/x-zip');
+		$response->setHeader('Content-Disposition', 'attachment; filename="clipboard_' . basename($file) . '"');
+		$response->setHeader('Content-Length',filesize($file));
+		readfile($file);
+		unlink($file);
+	}
+	
 	public function styleAction()
 	{
 		$path = realpath(dirname(__FILE__).'/../views/scripts/kc/style.phtml');
