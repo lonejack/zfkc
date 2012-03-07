@@ -98,7 +98,7 @@ class KcController extends Zend_Controller_Action
 	public function expandAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
-		$data = array('dirs' => Application_Model_kcBrowser::getDirs($this->_uploadDir.'/'.$dir));
+		$data = array('dirs' => $this->_kcfiles->getDirs($this->_uploadDir.'/'.$dir));
 		$this->_helper->json->sendJson($data);
 	}
 	
@@ -109,7 +109,7 @@ class KcController extends Zend_Controller_Action
 		$dir = $request->getParam('dir','');
 	
 		try {
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
 	
 			$message = $e->getMessage();
@@ -120,7 +120,7 @@ class KcController extends Zend_Controller_Action
 			return ;
 		}
 		$this->setSessionDir($dir);
-		$dirWritable = Application_Model_kclib_Dir::isWritable($directory);
+		$dirWritable = $this->_kcfiles->isWritable($directory);
 		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
 		$data = array (
 				'files' => $files,
