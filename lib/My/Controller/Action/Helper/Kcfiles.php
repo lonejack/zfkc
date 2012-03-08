@@ -157,6 +157,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $result;
 	}
 	
+	/*************************************
+	 * METHODS FOR THUMBS CREATION
+	 ************************************/
+	
 	/** Returns an array with calculated proportional width & height.
 	 * The parameter $bigger_size is the bigger dimension (width or height) of calculated sizes.
 	 * The other dimension (height or width) will be calculated automaticaly
@@ -218,6 +222,39 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$this->imagecopyresampled($image);
 		}
 	}
+	/** Resize image. Returns TRUE on success or FALSE on failure
+	 * @param integer $width
+	 * @param integer $height
+	 * @return bool */
+	
+	public function resize($gd, $width, $height) {
+		if (!$width) $width = 1;
+		if (!$height) $height = 1;
+		return (
+				(false !== ($img = new Application_Model_kclib_Gd(array($width, $height)))) &&
+				$img->imagecopyresampled($this) &&
+				(false !== ($this->image = $img->get_image())) &&
+				(false !== ($this->width = $img->get_width())) &&
+				(false !== ($this->height = $img->get_height()))
+		);
+	}
+	
+	/** Resize image to fit in given resolution. Returns TRUE on success or FALSE on failure
+	 * @param integer $width
+	 * @param integer $height
+	 * @return bool */
+	
+	public function resize_fit($gd, $width, $height) {
+		if ((!$width && !$height) || (($width == $gd->width) && ($height == $gd->height)))
+			return true;
+		if (!$width || (($height / $width) < ($gd->height / $gd->width)))
+			$width = intval(($gd->width * $height) / $gd->height);
+		elseif (!$height || (($width / $height) < ($gd->width / $gd->height)))
+		$height = intval(($gd->height * $width) / $gd->width);
+		if (!$width) $width = 1;
+		if (!$height) $height = 1;
+		return $this->resize($gd, $width, $height);
+	}
 
 	/** Returns an array. Element 0 - GD resource. Element 1 - width. Element 2 - height.
 	 * Returns FALSE on failure. The only one parameter $image can be an instance of this class,
@@ -262,27 +299,26 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			}
 		}
 
-		if(is_resource($image) &&
-				(get_resource_type($image) == "gd") &&
-				isset($width) &&
-				isset($height) &&
-				(preg_match('/^[1-9][0-9]*$/', $width) !== false) &&
-				(preg_match('/^[1-9][0-9]*$/', $height) !== false)) {
-			return array('res'=>$image, 'width'=>$width,'height'=>$height,'type'=>$type);
+		if(is_resource($image) &&isset($width) && isset($height) &&	(preg_match('/^[1-9][0-9]*$/', $width) !== false) &&
+				(preg_match('/^[1-9][0-9]*$/', $height) !== false))
+		{
+			$gd = new stdClass;
+			$gd->resource = $image;
+			$gd->width =$width;
+			$gd->height =$height;
+			$gd->type =$type;
+			return $gd;
 		}
 		return false;
 	}
 
 	public function makeThumb($source, $destination, $width, $height, $overwrite=true){
-		$gd = $this->prepareGd($source);
+		$gd = $this->build_image($image);
 
 		// Drop files which are not GD handled images
 		if ($gd===false)
 			return true;
-
-		/*        $thumb = substr($file, strlen($this->config['uploadDir']));
-		 $thumb = $this->config['uploadDir'] . "/" . $this->config['thumbsDir'] . "/" . $thumb;
-		$thumb = path::normalize($thumb);*/
+		
 		$thumbDir = dirname($destination);
 		$perm = $this->_config['dirPerms'];
 		if (!is_dir($thumbDir) && !@mkdir($thumbDir,$perm , true))
@@ -292,17 +328,17 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			return true;
 
 		// Images with smaller resolutions than thumbnails
-		if (($gd->get_width() <= $this->_config['thumbWidth']) &&
-				($gd->get_height() <= $this->_config['thumbHeight'])
-		) {
+		if (($gd->width <= $this->_config['thumbWidth']) &&
+				($gd->height <= $this->_config['thumbHeight'])) {
 			$browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
 			// Drop only browsable types
 			if (in_array($gd->type, $browsable))
 				return true;
 
 			// Resize image
-		} elseif (!$gd->resize_fit($this->_config['thumbWidth'], $this->_config['thumbHeight']))
-		return false;
+		} 
+		elseif (!$this->resize_fit($gd, $this->_config['thumbWidth'], $this->_config['thumbHeight']))
+			return false;
 
 		// Save thumbnail
 		$gd->imagejpeg($destination, $this->_config['jpegQuality']);
@@ -310,6 +346,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return ;
 
 	}
+	
+	/***********************************
+	 * FILES METHODS
+	 ***********************************/
 
 	/**
 	 * get files info on directory
