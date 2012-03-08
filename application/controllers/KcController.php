@@ -22,7 +22,7 @@ class KcController extends Zend_Controller_Action
 		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_config->uploadURL;
 		$this->_uploadUrl = $this->_config->imagesDir;
-		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles');
+		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($this->_config);
 		
 		$request = $this->getRequest();
 
