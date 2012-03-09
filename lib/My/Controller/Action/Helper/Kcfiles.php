@@ -163,83 +163,15 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/*************************************
 	 * METHODS FOR THUMBS CREATION
 	************************************/
-
-	/** Returns an array with calculated proportional width & height.
-	 * The parameter $bigger_size is the bigger dimension (width or height) of calculated sizes.
-	 * The other dimension (height or width) will be calculated automaticaly
-	 * @param integer $bigger_size
-	 * @return array */
-
-	public function get_prop_size($details, $bigger_size) {
-
-		if ($details['width'] > $details['height']) {
-			$width = $bigger_size;
-			//$height = $this->get_prop_height($width);
-			$height = intval(($details['height'] * $width) / $details['width']);
-			if (!$height)
-				$height = 1;
-
-		}
-		elseif ($details['width'] < $details['height']) {
-			$height = $bigger_size;
-			//$width = $this->get_prop_width($height);
-			$width = intval(($details['width'] * $height) / $details['height']);
-			if (!$width)
-				$width = 1;
-
-		}
-		else
-			$width = $height = $bigger_size;
-
-		return array($width, $height);
-	}
-
-	/**
-	 * Parameter $image can be:
-	 * A filename string. Get image form file.
-	 * The non-required parameter $bigger_size is the bigger dimension (width or height) the image
-	 * will be resized to. The other dimension (height or width) will be calculated autamaticaly
-	 * @param mixed $image
-	 * @param integer $bigger_size
-	 * @return gd */
-
-	public function prepareGd($image, $bigger_size=null) {
-		$image_details = $this->build_image($image);
-
-		if ($image_details === false)
-			return ( false );
-
-
-		if 	(!is_null($image_details['res']) && !is_null($bigger_size) &&
-				(preg_match('/^[1-9][0-9]*$/', $bigger_size) !== false))
-		{
-			//$image = $this->image;
-			list($width, $height) = $this->get_prop_size($image_details, $bigger_size);
-			$this->image = imagecreatetruecolor($width, $height);
-			if ($image_details['type'] == IMAGETYPE_PNG) {
-				imagealphablending($this->image, false);
-				imagesavealpha($this->image, true);
-			}
-			$this->width = $width;
-			$this->height = $height;
-			$this->imagecopyresampled($image);
-		}
-	}
-
-	protected function imagecopyresampled(
-			$source,
-			$destination,
-			$dst_x=0, $dst_y=0,
-			$src_x=0, $src_y=0,
-			$dst_w=null, $dst_h=null,
-			$src_w=null, $src_h=null)
+	
+	protected function imagecopyresampled($source,$destination)
 	{
-
-		if (is_null($dst_w)) $dst_w = $destination->width - $dst_x;
-		if (is_null($dst_h)) $dst_h = $destination->height - $dst_y;
-		if (is_null($src_w)) $src_w = $source->width - $src_x;
-		if (is_null($src_h)) $src_h = $source->height - $src_y;
-		return imagecopyresampled($destination->resource, $source->resource, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
+		$thumbWidth = $this->_config['thumbWidth'];
+		$thumbHeight = $this->_config['thumbHeight'];
+		$this->calcImageRate($info['width'], $info['height'], $thumbWidth, $thumbHeight);
+		return imagecopyresampled($destination, $source, 
+				$thumbWidth, $thumbHeight, 
+				$src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
 
 	}
 
@@ -251,34 +183,30 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	public function resize($gd, $width, $height) {
 		if (!$width) $width = 1;
 		if (!$height) $height = 1;
+		
+		$destination = &imagecreatetruecolor($width, $height);
 
-		$destination = new stdClass;
-		$destination->resource = &imagecreatetruecolor($width, $height);;
-		$destination->width =$width;
-		$destination->height =$height;
-
-		if( $destination->resource === false )
+		if( $destination === false )
 			return false;
-
-		if( $this->imagecopyresampled($gd,$destination) )
-			return $destination->resource;
+		return imagecopyresampled($destination, $gd);
 	}
-
-	/** Resize image to fit in given resolution. Returns TRUE on success or FALSE on failure
-	 * @param integer $width
-	 * @param integer $height
-	 * @return bool */
-
-	public function resize_fit($gd, $width, $height) {
-		if ((!$width && !$height) || (($width == $gd->width) && ($height == $gd->height)))
+	
+	/**
+	 * calculate how to resize the source image 
+	 * @param int $src_widht, source image width
+	 * @param int $src_height, source image height
+	 * @param int $dst_width, destination image width(by reference)
+	 * @param int $dst_height, destination image height(by reference)
+	 */
+	public function calcImageRate($src_widht, $src_height, &$dst_width, &$dst_height) {
+		if ((!$dst_width && !$dst_height) || (($dst_width == $src_widht) && ($dst_height == $src_height)))
 			return true;
-		if (!$width || (($height / $width) < ($gd->height / $gd->width)))
-			$width = intval(($gd->width * $height) / $gd->height);
-		elseif (!$height || (($width / $height) < ($gd->width / $gd->height)))
-		$height = intval(($gd->height * $width) / $gd->width);
-		if (!$width) $width = 1;
-		if (!$height) $height = 1;
-		return $this->resize($gd, $width, $height);
+		if (!$dst_width || (($dst_height / $dst_width) < ($src_height / $src_widht)))
+			$dst_width = intval(($src_widht * $dst_height) / $src_height);
+		elseif (!$dst_height || (($dst_width / $dst_height) < ($src_widht / $src_height)))
+		$dst_height = intval(($src_height * $dst_width) / $src_widht);
+		if (!$dst_width) $dst_width = 1;
+		if (!$dst_height) $dst_height = 1;
 	}
 
 	/** Returns an array. Element 0 - GD resource. Element 1 - width. Element 2 - height.
@@ -287,7 +215,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param string(path) $image
 	 * @return array */
 
-	protected function build_image($image) {
+	protected function _getResource($image, &$info) {
 		$options = @getimagesize($image);
 		if (false !== $options ) {
 			list($width, $height, $type) = $options;
@@ -327,18 +255,16 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		if(is_resource($image) && isset($width) && isset($height) &&	(preg_match('/^[1-9][0-9]*$/', $width) !== false) &&
 				(preg_match('/^[1-9][0-9]*$/', $height) !== false))
 		{
-			$gd = new stdClass();
-			$gd->resource = $image;
-			$gd->width =$width;
-			$gd->height =$height;
-			$gd->type =$type;
-			return $gd;
+			$info['width'] =$width;
+			$info['height'] =$height;
+			$info['type'] =$type;
+			return $image;
 		}
 		return false;
 	}
 
 	public function makeThumb($source, $destination, $overwrite=false){
-		$gd = $this->build_image($source);
+		$gd = $this->_getResource($source, $info_gd = array());
 
 		// Drop files which are not GD handled images
 		if ($gd===false)
@@ -353,17 +279,18 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			return true; // file already present
 
 		// Images with smaller resolutions than thumbnails
-		if (($gd->width <= $this->_config['thumbWidth']) &&
-				($gd->height <= $this->_config['thumbHeight'])) {
+		if (($info['width'] <= $this->_config['thumbWidth']) &&
+				($info['height'] <= $this->_config['thumbHeight'])) {
 			$browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
 			// Drop only browsable types
-			if (in_array($gd->type, $browsable))
+			if (in_array($info['type'], $browsable))
 				return true;
 
 			// Resize image
 		}
 		else{
-			$gd = $this->resize_fit($gd, $this->_config['thumbWidth'], $this->_config['thumbHeight']);
+			
+			$gd = $this->resize($gd, $info['width'], $info['height']);
 			if ($gd == false)
 				return false;
 		}
@@ -371,7 +298,6 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		imagejpeg($gd, $destination, $this->_config['jpegQuality']);
 		chmod($destination, $this->_config['filePerms']);
 		return ;
-
 	}
 
 	/***********************************
