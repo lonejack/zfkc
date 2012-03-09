@@ -35,6 +35,10 @@ class KcController extends Zend_Controller_Action
 			Application_Model_kcBrowser::$config['dirPerms'] = octdec(Application_Model_kcBrowser::$config['dirPerms']);
 			Application_Model_kcBrowser::$config['filePerms'] = octdec(Application_Model_kcBrowser::$config['filePerms']);
 		}
+		$this->_kcfiles->makeThumb(
+				'/home/claudio/public_html/zfkc/public/upload/images/p1020680.jpg',
+				'/home/claudio/public_html/zfkc/public/upload/.thumbs/images/p1020680.jpg' );
+		
 
 		$layout = Zend_Layout::getMvcInstance();
 		$layout->disableLayout();

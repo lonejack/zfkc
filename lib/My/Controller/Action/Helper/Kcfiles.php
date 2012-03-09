@@ -53,8 +53,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param unknown_type $options
 	 */
 	public function Config($config){
-		if( $config instanceof Zend_Config )
+		if( $config instanceof Zend_Config ) {
 			$this->_config = $config->toArray();
+			$this->_config['dirPerms'] = octdec($this->_config['dirPerms']);
+			$this->_config['filePerms'] = octdec($this->_config['filePerms']);
+		}
 		return $this;
 	}
 
@@ -65,7 +68,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	public function getTemporaryFileName($base_dir, $extension='txt')
 	{
 		if( !Zend_Session::isStarted() )
-			throw new Exception("Session not allowable");
+			throw new Exception("Session not availabe");
 			
 		$id = Zend_Session::getId();
 		do {
@@ -156,42 +159,42 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		}
 		return $result;
 	}
-	
+
 	/*************************************
 	 * METHODS FOR THUMBS CREATION
-	 ************************************/
-	
+	************************************/
+
 	/** Returns an array with calculated proportional width & height.
 	 * The parameter $bigger_size is the bigger dimension (width or height) of calculated sizes.
 	 * The other dimension (height or width) will be calculated automaticaly
 	 * @param integer $bigger_size
 	 * @return array */
-	
+
 	public function get_prop_size($details, $bigger_size) {
-	
+
 		if ($details['width'] > $details['height']) {
 			$width = $bigger_size;
 			//$height = $this->get_prop_height($width);
 			$height = intval(($details['height'] * $width) / $details['width']);
-			if (!$height) 
+			if (!$height)
 				$height = 1;
-	
-		} 
+
+		}
 		elseif ($details['width'] < $details['height']) {
 			$height = $bigger_size;
 			//$width = $this->get_prop_width($height);
 			$width = intval(($details['width'] * $height) / $details['height']);
 			if (!$width)
 				$width = 1;
-	
-		} 
+
+		}
 		else
 			$width = $height = $bigger_size;
-	
+
 		return array($width, $height);
 	}
 
-	/** 
+	/**
 	 * Parameter $image can be:
 	 * A filename string. Get image form file.
 	 * The non-required parameter $bigger_size is the bigger dimension (width or height) the image
@@ -205,10 +208,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		if ($image_details === false)
 			return ( false );
-		
-		
+
+
 		if 	(!is_null($image_details['res']) && !is_null($bigger_size) &&
-			(preg_match('/^[1-9][0-9]*$/', $bigger_size) !== false))
+				(preg_match('/^[1-9][0-9]*$/', $bigger_size) !== false))
 		{
 			//$image = $this->image;
 			list($width, $height) = $this->get_prop_size($image_details, $bigger_size);
@@ -222,28 +225,50 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$this->imagecopyresampled($image);
 		}
 	}
+
+	protected function imagecopyresampled(
+			$source,
+			$destination,
+			$dst_x=0, $dst_y=0,
+			$src_x=0, $src_y=0,
+			$dst_w=null, $dst_h=null,
+			$src_w=null, $src_h=null)
+	{
+
+		if (is_null($dst_w)) $dst_w = $destination->width - $dst_x;
+		if (is_null($dst_h)) $dst_h = $destination->height - $dst_y;
+		if (is_null($src_w)) $src_w = $source->width - $src_x;
+		if (is_null($src_h)) $src_h = $source->height - $src_y;
+		return imagecopyresampled($destination->resource, $source->resource, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
+
+	}
+
 	/** Resize image. Returns TRUE on success or FALSE on failure
 	 * @param integer $width
 	 * @param integer $height
-	 * @return bool */
-	
+	 * @return gd resource (the image resized)/ false */
+
 	public function resize($gd, $width, $height) {
 		if (!$width) $width = 1;
 		if (!$height) $height = 1;
-		return (
-				(false !== ($img = new Application_Model_kclib_Gd(array($width, $height)))) &&
-				$img->imagecopyresampled($this) &&
-				(false !== ($this->image = $img->get_image())) &&
-				(false !== ($this->width = $img->get_width())) &&
-				(false !== ($this->height = $img->get_height()))
-		);
+
+		$destination = new stdClass;
+		$destination->resource = &imagecreatetruecolor($width, $height);;
+		$destination->width =$width;
+		$destination->height =$height;
+
+		if( $destination->resource === false )
+			return false;
+
+		if( $this->imagecopyresampled($gd,$destination) )
+			return $destination->resource;
 	}
-	
+
 	/** Resize image to fit in given resolution. Returns TRUE on success or FALSE on failure
 	 * @param integer $width
 	 * @param integer $height
 	 * @return bool */
-	
+
 	public function resize_fit($gd, $width, $height) {
 		if ((!$width && !$height) || (($width == $gd->width) && ($height == $gd->height)))
 			return true;
@@ -261,7 +286,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * a GD resource, an array(width, height) or path to image file.
 	 * @param string(path) $image
 	 * @return array */
-	
+
 	protected function build_image($image) {
 		$options = @getimagesize($image);
 		if (false !== $options ) {
@@ -270,39 +295,39 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				case IMAGETYPE_GIF:
 					$image = @imagecreatefromgif($image);
 					break;
-					
+						
 				case IMAGETYPE_WBMP:
 					$image = @imagecreatefromwbmp($image);
 					break;
-					
+						
 				case IMAGETYPE_JPEG:
 					$image = @imagecreatefromjpeg($image);
 					break;
-					
+						
 				case IMAGETYPE_JPEG2000:
 					$image = @imagecreatefromjpeg($image);
 					break;
-					
+						
 				case IMAGETYPE_PNG:
 					$image = imagecreatefrompng($image);
 					imagealphablending($image, false);
 					break;
-					
+						
 				case IMAGETYPE_XBM:
 					$image = @imagecreatefromxbm($image);
 					break;
-				
+
 				default:
 					$image = false;
 					break;
-					
+						
 			}
 		}
 
-		if(is_resource($image) &&isset($width) && isset($height) &&	(preg_match('/^[1-9][0-9]*$/', $width) !== false) &&
+		if(is_resource($image) && isset($width) && isset($height) &&	(preg_match('/^[1-9][0-9]*$/', $width) !== false) &&
 				(preg_match('/^[1-9][0-9]*$/', $height) !== false))
 		{
-			$gd = new stdClass;
+			$gd = new stdClass();
 			$gd->resource = $image;
 			$gd->width =$width;
 			$gd->height =$height;
@@ -312,20 +337,20 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return false;
 	}
 
-	public function makeThumb($source, $destination, $width, $height, $overwrite=true){
-		$gd = $this->build_image($image);
+	public function makeThumb($source, $destination, $overwrite=false){
+		$gd = $this->build_image($source);
 
 		// Drop files which are not GD handled images
 		if ($gd===false)
 			return true;
-		
+
 		$thumbDir = dirname($destination);
 		$perm = $this->_config['dirPerms'];
 		if (!is_dir($thumbDir) && !@mkdir($thumbDir,$perm , true))
 			return false;
 
 		if (!$overwrite && is_file($destination))
-			return true;
+			return true; // file already present
 
 		// Images with smaller resolutions than thumbnails
 		if (($gd->width <= $this->_config['thumbWidth']) &&
@@ -336,20 +361,22 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				return true;
 
 			// Resize image
-		} 
-		elseif (!$this->resize_fit($gd, $this->_config['thumbWidth'], $this->_config['thumbHeight']))
-			return false;
-
+		}
+		else{
+			$gd = $this->resize_fit($gd, $this->_config['thumbWidth'], $this->_config['thumbHeight']);
+			if ($gd == false)
+				return false;
+		}
 		// Save thumbnail
-		$gd->imagejpeg($destination, $this->_config['jpegQuality']);
+		imagejpeg($gd, $destination, $this->_config['jpegQuality']);
 		chmod($destination, $this->_config['filePerms']);
 		return ;
 
 	}
-	
+
 	/***********************************
 	 * FILES METHODS
-	 ***********************************/
+	***********************************/
 
 	/**
 	 * get files info on directory
@@ -372,7 +399,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			if (is_array($size) && count($size)) {
 				$thumb_file = "$thumbDir/" . basename($file);
 				if (!is_file($thumb_file))
-					$this->makeThumb($file, $thumb_file,$this->_config['thumbWidth'],$this->_config['thumbHeight'],false);
+					$this->makeThumb($file, $thumb_file);
 				$smallThumb =
 				($size[0] <= $this->_config['thumbWidth']) &&
 				($size[1] <= $this->_config['thumbHeight']) &&
