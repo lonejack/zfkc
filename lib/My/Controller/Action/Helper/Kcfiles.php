@@ -8,23 +8,23 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	/** GD resource
 	 * @var resource */
-	protected $image;
+	//protected $image;
 
 	/** Image width
 	 * @var integer */
-	protected $width;
+	//protected $width;
 
 	/** Image height
 	 * @var integer */
-	protected $height;
+	//protected $height;
 
 	/** Init error
 	 * @var bool */
-	public $init_error = false;
+	//public $init_error = false;
 
 	/** Last builded image type constant (IMAGETYPE_XXX)
 	 * @var integer */
-	public $type;
+	//public $type;
 
 
 	protected $_zipfile;
@@ -53,6 +53,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param unknown_type $options
 	 */
 	public function Config($config){
+		
 		if( $config instanceof Zend_Config ) {
 			$this->_config = $config->toArray();
 			$this->_config['dirPerms'] = octdec($this->_config['dirPerms']);
@@ -163,50 +164,52 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/*************************************
 	 * METHODS FOR THUMBS CREATION
 	************************************/
-	
-	protected function imagecopyresampled($source,$destination)
+
+	protected function _getResourceDestination($source, $src_widht, $src_height)
 	{
-		$thumbWidth = $this->_config['thumbWidth'];
-		$thumbHeight = $this->_config['thumbHeight'];
-		$this->calcImageRate($info['width'], $info['height'], $thumbWidth, $thumbHeight);
-		return imagecopyresampled($destination, $source, 
-				$thumbWidth, $thumbHeight, 
-				$src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
+		$dst_width = $this->_config['thumbWidth'];
+		$dst_height = $this->_config['thumbHeight'];
+		//$destination =$this->_createResDestination($info['width'], $info['height'], $thumbWidth, $thumbHeight);
+		if ((!$dst_width && !$dst_height) || (($dst_width == $src_widht) && ($dst_height == $src_height)))
+			return true;
 
-	}
-
-	/** Resize image. Returns TRUE on success or FALSE on failure
-	 * @param integer $width
-	 * @param integer $height
-	 * @return gd resource (the image resized)/ false */
-
-	public function resize($gd, $width, $height) {
-		if (!$width) $width = 1;
-		if (!$height) $height = 1;
-		
-		$destination = &imagecreatetruecolor($width, $height);
+		if (!$dst_width || (($dst_height / $dst_width) < ($src_height / $src_widht))) {
+			$dst_width = intval(($src_widht * $dst_height) / $src_height);
+		}
+		elseif (!$dst_height || (($dst_width / $dst_height) < ($src_widht / $src_height))) {
+			$dst_height = intval(($src_height * $dst_width) / $src_widht);
+		}
+		if (!$dst_width)
+			$dst_width = 1;
+		if (!$dst_height)
+			$dst_height = 1;
+		$destination = &imagecreatetruecolor($dst_width, $dst_height);
 
 		if( $destination === false )
 			return false;
-		return imagecopyresampled($destination, $gd);
+		$result = @imagecopyresampled($destination, $source, 0, 0, 0, 0, 
+					$thumbWidth, $thumbHeight, $src_widht, $src_height);
+		if( !$result )
+			return false;
+		return $destination; 
+
 	}
-	
+
 	/**
-	 * calculate how to resize the source image 
-	 * @param int $src_widht, source image width
-	 * @param int $src_height, source image height
-	 * @param int $dst_width, destination image width(by reference)
-	 * @param int $dst_height, destination image height(by reference)
+	 *
+	 * @param string $source path to file
+	 * @return array indicating info regarding the image/false if the procedure fail
 	 */
-	public function calcImageRate($src_widht, $src_height, &$dst_width, &$dst_height) {
-		if ((!$dst_width && !$dst_height) || (($dst_width == $src_widht) && ($dst_height == $src_height)))
-			return true;
-		if (!$dst_width || (($dst_height / $dst_width) < ($src_height / $src_widht)))
-			$dst_width = intval(($src_widht * $dst_height) / $src_height);
-		elseif (!$dst_height || (($dst_width / $dst_height) < ($src_widht / $src_height)))
-		$dst_height = intval(($src_height * $dst_width) / $src_widht);
-		if (!$dst_width) $dst_width = 1;
-		if (!$dst_height) $dst_height = 1;
+	public function getInfoImage($image){
+		$options = @getimagesize($image);
+		if (false === $options &&
+				preg_match('/^[1-9][0-9]*$/', $options[0]) !== false &&
+				preg_match('/^[1-9][0-9]*$/', $options[1]) !== false ){
+			return false;
+		}
+		$keys = array('width','height','type','sizestr','mime','channels','bits');
+		return array_combine ( $keys , $options );
+
 	}
 
 	/** Returns an array. Element 0 - GD resource. Element 1 - width. Element 2 - height.
@@ -215,57 +218,53 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param string(path) $image
 	 * @return array */
 
-	protected function _getResource($image, &$info) {
-		$options = @getimagesize($image);
-		if (false !== $options ) {
-			list($width, $height, $type) = $options;
-			switch($type){
-				case IMAGETYPE_GIF:
-					$image = @imagecreatefromgif($image);
-					break;
-						
-				case IMAGETYPE_WBMP:
-					$image = @imagecreatefromwbmp($image);
-					break;
-						
-				case IMAGETYPE_JPEG:
-					$image = @imagecreatefromjpeg($image);
-					break;
-						
-				case IMAGETYPE_JPEG2000:
-					$image = @imagecreatefromjpeg($image);
-					break;
-						
-				case IMAGETYPE_PNG:
-					$image = imagecreatefrompng($image);
-					imagealphablending($image, false);
-					break;
-						
-				case IMAGETYPE_XBM:
-					$image = @imagecreatefromxbm($image);
-					break;
+	protected function _getResource($image, $type) {
 
-				default:
-					$image = false;
-					break;
-						
-			}
+		switch($type){
+			case IMAGETYPE_GIF:
+				$image = @imagecreatefromgif($image);
+				break;
+
+			case IMAGETYPE_WBMP:
+				$image = @imagecreatefromwbmp($image);
+				break;
+
+			case IMAGETYPE_JPEG:
+				$image = @imagecreatefromjpeg($image);
+				break;
+
+			case IMAGETYPE_JPEG2000:
+				$image = @imagecreatefromjpeg($image);
+				break;
+
+			case IMAGETYPE_PNG:
+				$image = imagecreatefrompng($image);
+				imagealphablending($image, false);
+				break;
+
+			case IMAGETYPE_XBM:
+				$image = @imagecreatefromxbm($image);
+				break;
+
+			default:
+				$image = false;
+				break;
+
 		}
 
-		if(is_resource($image) && isset($width) && isset($height) &&	(preg_match('/^[1-9][0-9]*$/', $width) !== false) &&
-				(preg_match('/^[1-9][0-9]*$/', $height) !== false))
+		if(is_resource($image))
 		{
-			$info['width'] =$width;
-			$info['height'] =$height;
-			$info['type'] =$type;
 			return $image;
 		}
 		return false;
 	}
 
 	public function makeThumb($source, $destination, $overwrite=false){
-		$gd = $this->_getResource($source, $info_gd = array());
+		$info_gd = $this->getInfoImage($source);
+		if ($info_gd===false)
+			return true;
 
+		$gd = $this->_getResource($source, $info_gd['type']);
 		// Drop files which are not GD handled images
 		if ($gd===false)
 			return true;
@@ -279,18 +278,18 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			return true; // file already present
 
 		// Images with smaller resolutions than thumbnails
-		if (($info['width'] <= $this->_config['thumbWidth']) &&
-				($info['height'] <= $this->_config['thumbHeight'])) {
+		if (($info_gd['width'] <= $this->_config['thumbWidth']) &&
+				($info_gd['height'] <= $this->_config['thumbHeight'])) {
 			$browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
 			// Drop only browsable types
-			if (in_array($info['type'], $browsable))
+			if (in_array($info_gd['type'], $browsable))
 				return true;
 
 			// Resize image
 		}
 		else{
-			
-			$gd = $this->resize($gd, $info['width'], $info['height']);
+
+			$gd = $this->_getResourceDestination($gd, $info_gd['width'], $info_gd['height']);
 			if ($gd == false)
 				return false;
 		}
@@ -303,6 +302,47 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/***********************************
 	 * FILES METHODS
 	***********************************/
+	
+	/** Get the extension from filename
+	 * @param string $file
+	 * @param bool $toLower
+	 * @return string */
+	
+	function getExtension($filename, $toLower=true) {
+		return preg_match('/^.*\.([^\.]*)$/s', $filename, $patt)
+		? ($toLower ? strtolower($patt[1]) : $patt[1]) : "";
+	}
+	
+	function existFile( $upload_dir, $names ) {
+		if(is_string($names)) {
+			$names = array($names);
+			$retString = true;
+		}
+		$list = array();
+		foreach($names as $name) {
+			$file = realpath($upload_dir.'/'. $name);
+			$list[]=$file;
+				
+			if( strncmp($upload_dir, $file, strlen($upload_dir))  )
+			{
+				throw new Exception('Invalid request!',-1);
+			}
+	
+			if ( !is_file($file) )
+			{
+				throw new Exception("file $name is Inexistant!",1);
+			}
+			if( !is_readable($file) )
+			{
+				throw new Exception("file $name is unreadable",2);
+			}
+	
+		}
+		if( isset($retString) ) {
+			$list = $list[0];
+		}
+		return $list;
+	}
 
 	/**
 	 * get files info on directory
@@ -336,7 +376,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$stat = stat($file);
 			if ($stat === false) continue;
 			$name = basename($file);
-			$ext = Application_Model_kclib_File::getExtension($file);
+			$ext = $this->getExtension($file);
 			$theme = $this->_config['theme'];
 			$bigIcon = file_exists("themes/$theme/img/files/big/$ext.png");
 			$smallIcon = file_exists("themes/$theme/img/files/small/$ext.png");
@@ -347,7 +387,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 					'mtime' => $stat['mtime'],
 					'date' => @strftime($this->_config['format_date'], $stat['mtime']),
 					'readable' => is_readable($file),
-					'writable' => Application_Model_kclib_File::isWritable($file)?'true':'false'	,
+					'writable' => $this->isWritable($file)?'true':'false'	,
 					'bigIcon' => $bigIcon,
 					'smallIcon' => $smallIcon,
 					'thumb' => $thumb,
@@ -357,6 +397,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $return;
 	}
 
+	/*******************************
+	 * Folder methods
+	 */
+	
 	/**
 	 *
 	 * @param path(string) $upload_dir absolute path to upload dir
@@ -378,6 +422,36 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		return $directory;
 	}
+	
+	/** Normalize the given path. On Windows servers backslash will be replaced
+	 * with slash. Remobes unnecessary doble slashes and double dots. Removes
+	 * last slash if it exists. Examples:
+	 * Application_Model_kclib_Path::normalize("C:\\any\\path\\") returns "C:/any/path"
+	 * Application_Model_kclib_Path::normalize("/your/path/..//home/") returns "/your/home"
+	 * @param string $path
+	 * @return string */
+	
+	function normalize($path) {
+		if ($this->getOs() == self::WIN) {
+			$path = preg_replace('/([^\\\])\\\([^\\\])/', "$1/$2", $path);
+			if (substr($path, -1) == "\\") $path = substr($path, 0, -1);
+			if (substr($path, 0, 1) == "\\") $path = "/" . substr($path, 1);
+		}
+	
+		$path = preg_replace('/\/+/s', "/", $path);
+	
+		$path = "/$path";
+		if (substr($path, -1) != "/")
+			$path .= "/";
+	
+		$expr = '/\/([^\/]{1}|[^\.\/]{2}|[^\/]{3,})\/\.\.\//s';
+		while (preg_match($expr, $path))
+			$path = preg_replace($expr, "/", $path);
+	
+		$path = substr($path, 0, -1);
+		$path = substr($path, 1);
+		return $path;
+	}
 
 	/**
 	 * Checks if the given directory is really writable. The standard PHP
@@ -387,7 +461,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 */
 
 	function isWritable($dir) {
-		$dir = Application_Model_kclib_Path::normalize($dir);
+		$dir =$this->normalize($dir);
 		if (!is_dir($dir))
 			return false;
 		if ($this->getOs() == self::LINUX){
@@ -452,6 +526,55 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		return $info;
 	}
+	
+	/** Recursively delete the given directory. Returns TRUE on success.
+	 * If $firstFailExit parameter is true (default), the method returns the
+	 * path to the first failed file or directory which cannot be deleted.
+	 * If $firstFailExit is false, the method returns an array with failed
+	 * files and directories which cannot be deleted. The third parameter
+	 * $failed is used for internal use only.
+	 * @param string $dir
+	 * @param bool $firstFailExit
+	 * @param array $failed
+	 * @return mixed */
+	
+	function prune($dir, $firstFailExit=true, array $failed=null) {
+		if ($failed === null) $failed = array();
+		$files = $this->getDirContent($dir);
+		if ($files === false) {
+			if ($firstFailExit)
+				return $dir;
+			$failed[] = $dir;
+			return $failed;
+		}
+	
+		foreach ($files as $file) {
+			if (is_dir($file)) {
+				$failed_in = $this->prune($file, $firstFailExit, $failed);
+				if ($failed_in !== true) {
+					if ($firstFailExit)
+						return $failed_in;
+					if (is_array($failed_in))
+						$failed = array_merge($failed, $failed_in);
+					else
+						$failed[] = $failed_in;
+				}
+			} elseif (!@unlink($file)) {
+				if ($firstFailExit)
+					return $file;
+				$failed[] = $file;
+			}
+		}
+	
+		if (!@rmdir($dir)) {
+			if ($firstFailExit)
+				return $dir;
+			$failed[] = $dir;
+		}
+	
+		return count($failed) ? $failed : true;
+	}
+	
 	/** Get the content of the given directory. Returns an array with filenames
 	 * or FALSE on failure
 	 * @param string $dir
@@ -514,7 +637,8 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		}
 		closedir($dh);
-		usort($files, 'My_Controller_Action_Helper_Kcfiles::fileNameCompare');
+		
+		usort($files, get_class($this).'::fileNameCompare');
 		return $files;
 	}
 
@@ -542,5 +666,71 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			return self::WIN;
 		return self::LINUX;
 	}
-
+	
+	function getTree($baseDir, $dpath, $index=0) {
+	
+		static $sub_dir;
+		$paths = array();
+		if( $index == 0 )
+		{
+				
+			//build the tree on $path
+			$sub_dir = explode("/", $dpath);
+			$paths = $this->getDirInfo($baseDir);
+		}
+	
+	
+	
+		/* search for subdirs under basedir */
+		$sub_paths = $this->getDirs($baseDir);
+		if( is_array($sub_paths) )
+		{
+				
+			foreach ($sub_paths as $key => $nPage)
+			{
+				if( isset($sub_dir[$index]) && $nPage['name'] == $sub_dir[$index] )
+				{
+					$sub_paths[$key]['dirs']= $this->getTree($baseDir.'/'.$sub_dir[$index], null, $index+1);
+				}
+			}
+			$paths['dirs'] = $sub_paths;
+		}
+		return $paths;
+	}
+	
+	function init_browser($uploadDir, $sessionDir) {
+	
+		//$tree = self::getDirInfo($uploadDir);
+	
+		$tree = $this->getTree($uploadDir, $sessionDir);
+		if (!is_array($tree['dirs']) || !count($tree['dirs']))
+			unset($tree['dirs']);
+		$files = $this->getFiles($uploadDir,$sessionDir);
+		$dirWritable = $this->isWritable("$uploadDir/$sessionDir");
+		$data = array(
+				'tree' => &$tree,
+				'files' => &$files,
+				'dirWritable' => $dirWritable
+		);
+		return $data;
+	}
+	
+	function getParam($param, $default = null ){
+		$list = explode('/', $param);
+		$start = $this->_config;
+		foreach ($list as $token ) {
+			if( !isset($start[$token]))
+				return $default;
+			$start = $start[$token];
+		}
+		return $start;
+	}
+	
+	public function __get($name)
+	{
+		if (array_key_exists($name, $this->_config)) {
+			return $this->_config[$name];
+		}
+		return null;
+	}
 }

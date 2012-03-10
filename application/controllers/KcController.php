@@ -7,38 +7,29 @@ class KcController extends Zend_Controller_Action
 	protected $_kcfinderDir;
 	protected $_realpath;
 	protected $_uploadDir;
-	protected $_uploadUrl;
+	//protected $_uploadUrl;
 	const TYPE = '/images';
 	protected $_types;
-	protected $_config;
 	protected $_kcfiles;
 
 
 	public function init()
 	{
 		/* Initialize action controller here */
-		$this->_config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
-
-		$this->_realpath = Application_Model_kclib_Path::normalize(PUBLIC_PATH.'/'.$this->_config->kcPath);
-		$this->_uploadDir = PUBLIC_PATH.$this->_config->uploadURL;
-		$this->_uploadUrl = $this->_config->imagesDir;
-		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($this->_config);
+		$config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
+		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($config);
+		
+		$this->_realpath = $this->_kcfiles->normalize(PUBLIC_PATH.'/'.$this->_kcfiles->kcPath);
+		$this->_uploadDir = PUBLIC_PATH.$this->_kcfiles->uploadURL;
+		
+		//$access_file = $this->_kcfiles->access['files'];
+		//$this->_uploadUrl = $this->_kcfiles->imagesDir;
+		
 		
 		$request = $this->getRequest();
 
 		// define types we're working on
 		$this->_types = $request->getParam('type','images');
-
-		Application_Model_kcBrowser::$config = $this->_config->toArray();
-		if( !is_int(Application_Model_kcBrowser::$config['dirPerms']) )
-		{
-			Application_Model_kcBrowser::$config['dirPerms'] = octdec(Application_Model_kcBrowser::$config['dirPerms']);
-			Application_Model_kcBrowser::$config['filePerms'] = octdec(Application_Model_kcBrowser::$config['filePerms']);
-		}
-		$this->_kcfiles->makeThumb(
-				'/home/claudio/public_html/zfkc/public/upload/images/p1020680.jpg',
-				'/home/claudio/public_html/zfkc/public/upload/.thumbs/images/p1020680.jpg' );
-		
 
 		$layout = Zend_Layout::getMvcInstance();
 		$layout->disableLayout();
@@ -66,10 +57,10 @@ class KcController extends Zend_Controller_Action
 	
 			// check existence
 			try {
-				$file_real = Application_Model_kcBrowser::existFile(
+				$file_real = $this->_kcfiles->existFile(
 						$this->_uploadDir,$file);
-				$thumb_real = Application_Model_kcBrowser::existFile(
-						$this->_uploadDir.'/'.$this->_config->thumbsDir, $file);
+				$thumb_real = $this->_kcfiles->existFile(
+						$this->_uploadDir.'/'.$this->_kcfiles->thumbsDir, $file);
 				unset($default);
 			} catch (Exception $e){
 				$message = $e->getMessage();
@@ -82,14 +73,14 @@ class KcController extends Zend_Controller_Action
 	
 		if( isset($default ) )
 		{
-			$ext = Application_Model_kclib_File::getExtension($file_name);
-			$thumb = "{$this->_realpath}/themes/{$this->_config->theme}/img/files/big/$ext.png";
+			$ext = $this->_kcfiles->getExtension($file_name);
+			$thumb = "{$this->_realpath}/themes/{$this->_kcfiles->theme}/img/files/big/$ext.png";
 		}
 		else
 		{
 			$thumb = $thumb_real;
 		}
-		$ext = strtolower( Application_Model_kclib_File::getExtension($thumb) );
+		$ext = strtolower( $this->_kcfiles->getExtension($thumb) );
 		if( $ext != 'png' )
 			$ext = 'jpeg';
 	
@@ -118,14 +109,14 @@ class KcController extends Zend_Controller_Action
 	
 			$message = $e->getMessage();
 			/*
-			 * TODO: store the message in log
+			 * TODO: store the message to log
 			*/
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		$this->setSessionDir($dir);
 		$dirWritable = $this->_kcfiles->isWritable($directory);
-		$files = Application_Model_kcBrowser::getFiles($this->_uploadDir,$dir);
+		$files = $this->_kcfiles->getFiles($this->_uploadDir,$dir);
 		$data = array (
 				'files' => $files,
 				'dirWritable' => $dirWritable?'true':'false'
@@ -137,7 +128,7 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$newDir = $request->getParam('newDir');
-		$allowed = $this->_config->access->dirs->create;
+		$allowed = $this->_kcfiles->getParam('access/dirs/create');//$this->_kcfiles->access->dirs->create;
 		if( !isset($dir) || !isset($newDir) || !$allowed ){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
@@ -161,7 +152,7 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => "A file or folder with that name already exists."));
 			return ;
 		}
-		if (!@mkdir($dir1,Application_Model_kcBrowser::$config['dirPerms'])) {
+		if (!@mkdir($dir1,$this->_kcfiles->getParam('dirPerms')) ) {
 			$msg = $this->view->translator->_("Cannot create {dir} folder.");
 			$msg = str_replace("{dir}", $newDir, $msg);
 			$data = array('error' => $msg);
@@ -177,7 +168,7 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$newName = $request->getParam('newName');
-		$allowed = $this->_config->access->dirs->rename;
+		$allowed = $this->_kcfiles->access['dirs']['rename'];
 		if( !isset($dir) || !isset($newName) ||!$allowed ){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
@@ -221,28 +212,28 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		
-		$allowed = $this->_config->access->dirs->delete;
+		$allowed = $this->_kcfiles->access['dirs']['delete'];
 		if( !isset($dir)  ||!$allowed ){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		try {
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
+			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
 		
-		if (!Application_Model_kclib_Dir::isWritable($directory)){
+		if (!$this->_kcfiles->isWritable($directory)){
 			$this->_helper->json->sendJson(array('error' => "Cannot delete the folder."));
 		}
 		
 		$thumbDir = $this->_uploadDir .'/.thumbs/'. $dir;
 		if (is_dir($thumbDir)) {
-			Application_Model_kclib_Dir::prune($thumbDir);
+			$this->_kcfiles->prune($thumbDir);
 		}
 		
-		$result = !Application_Model_kclib_Dir::prune($directory, false);
+		$result = !$this->_kcfiles->prune($directory, false);
 		if( $result === true ) {
 			$data = array('result'=>true);
 		} 
@@ -252,13 +243,14 @@ class KcController extends Zend_Controller_Action
 		}
 		$this->_helper->json->sendJson($data);
 	}
+	
 	public function renameAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$oldName = $request->getParam('file');
 	
 		$newName = $request->getParam('newName');
-		$allowed = $this->_config->access->files->rename;
+		$allowed = $this->_kcfiles->access['files']['rename'];
 	
 		if( !isset($dir) || !isset($oldName) || !isset($newName) || !$allowed ) {
 			$this->_helper->json->sendJson(	array('error' => 'Unknown error.')) ;
@@ -266,8 +258,8 @@ class KcController extends Zend_Controller_Action
 		}
 	
 		try {
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
-			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir.'/'.$dir, $oldName);
+			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
+			$filename = $this->_kcfiles->existFile($this->_uploadDir.'/'.$dir, $oldName);
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			/*
@@ -302,14 +294,14 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$file = $request->getParam('file');
-		$allowed = $this->_config->access->files->delete;
+		$allowed = $this->_kcfiles->access['files']['delete'];
 		if( !isset($dir) || !isset($file) || !$allowed ) {
 			$this->_helper->json->sendJson(	array('error' => 'Unknown error.') );
 			return;
 		}
 		try {
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
-			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir.'/'.$dir, $file);
+			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
+			$filename = $this->_kcfiles->existFile($this->_uploadDir.'/'.$dir, $file);
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			/*
@@ -334,13 +326,13 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$files = $request->getParam('files');
-		$allowed = $this->_config->access->files->copy;
+		$allowed = $this->_kcfiles->access['files']['copy'];
 	
 		try {
 			if( !isset($dir) || !isset($files) || !$allowed )
 				throw new Exception('Invalid parameters!',-1);
-			$directory = Application_Model_kcBrowser::checkDir($this->_uploadDir, $dir);
-			$filename = Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
+			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
+			$filename = $this->_kcfiles->existFile($this->_uploadDir, $files);
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
@@ -384,11 +376,11 @@ class KcController extends Zend_Controller_Action
 	public function removecbdAction(){
 		$request = $this->getRequest();
 		$files = $request->getParam('files');
-		$allowed = $this->_config->access->files->delete;
+		$allowed = $this->_kcfiles->access['files']['delete'];
 		try {
 			if( !isset($files) || !count($files) || !$allowed )
 				throw new Exception('Invalid parameters!',-1);
-			Application_Model_kcBrowser::existFile($this->_uploadDir, $files);
+			$this->_kcfiles->existFile($this->_uploadDir, $files);
 		} catch (Exception $e){
 			$message = $e->getMessage();
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
@@ -397,7 +389,7 @@ class KcController extends Zend_Controller_Action
 		
 		$error = array();
 		foreach($files as $file) {
-			$file = Application_Model_kclib_Path::normalize($file);
+			$file = $this->_kcfiles->normalize($file);
 			if (substr($file, 0, 1) == ".") 
 				continue;
 			//$type = explode("/", $file);
@@ -429,7 +421,7 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->viewRenderer->setNoRender();
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
-		$allowed = !$this->_config->access->files->denyZipDownload;
+		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
 		if (!isset($dir) || !$allowed){
 			return $this->_helper->json->sendJson(array('error' => "Unknown error."));
 		}
@@ -450,7 +442,7 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$files = $request->getParam('files');
-		$allowed = !$this->_config->access->files->denyZipDownload;
+		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
 		$hiddens = $this->_kcfiles->filterHidden($files);
 		$filespath = $this->_kcfiles->prepend($this->_uploadDir.'/'.$dir.'/',$files);
 		$readable = $this->_kcfiles->checkReadable($filespath);
@@ -473,7 +465,7 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->viewRenderer->setNoRender();
 		$request = $this->getRequest();
 		$files = $request->getParam('files');
-		$allowed = !$this->_config->access->files->denyZipDownload;
+		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
 		$hiddens = $this->_kcfiles->filterHidden($files);
 		$filespath = $this->_kcfiles->prepend($this->_uploadDir.'/',$files);
 		$readable = $this->_kcfiles->checkReadable($filespath);
@@ -523,8 +515,8 @@ class KcController extends Zend_Controller_Action
 	{
 		//$os = PHP_OS;
 
-		$path = Application_Model_kclib_Path::normalize($this->_realpath."/js/browser");
-		$this->view->files = Application_Model_kclib_Dir::content($path, array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
+		$path = $this->_kcfiles->normalize($this->_realpath."/js/browser");
+		$this->view->files = $this->_kcfiles->getDirContent($path, array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
 		foreach ($this->view->files as $file) {
 			$fmtime = filemtime($file);
 			if (!isset($mtime) || ($fmtime > $mtime))
@@ -665,9 +657,9 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$params = $request->getParams();
 
-		if( isset($this->_config->session) )
+		if( isset($this->_kcfiles->session) )
 		{
-			Zend_Session::setOptions($this->_config->session->toArray());
+			Zend_Session::setOptions($this->_kcfiles->session);
 		}
 		$this->view->title = 'demo';
 		$locale=new Zend_Locale();
@@ -679,7 +671,7 @@ class KcController extends Zend_Controller_Action
 		}
 		else
 		{
-			$theme = $this->_config->theme;
+			$theme = $this->_kcfiles->theme;
 		}
 
 		if( file_exists($this->_realpath."/themes/{$theme}/init.js" ))
@@ -699,15 +691,15 @@ class KcController extends Zend_Controller_Action
 		$browser['type'] = 'images';
 		$kcsession = Zend_Session::namespaceGet('KcFinder');
 		$browser['dir'] = 'images/public';//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
-		$browser['uploadURL'] = $this->_config->uploadURL;
-		$browser['thumbsDir'] = $this->_config->thumbsDir;
+		$browser['uploadURL'] = $this->_kcfiles->uploadURL;
+		$browser['thumbsDir'] = $this->_kcfiles->thumbsDir;
 		$browser['setOpener'] = false;
 		$browser['openerName'] = '';
 		$browser['isOpenedByCk'] = false; //isset($this->opener['CKEditor']['funcNum']) && preg_match('/^\d+$/', $this->opener['CKEditor']['funcNum'])
 		$browser['funcNumCkEditor'] = '';
 		$browser['openerName'] = null;
 		$browser['cms'] = null;
-		$access = $this->_config->access->toArray();
+		$access = $this->_kcfiles->access;
 		foreach ($access as $key1 => $par1 ){
 			foreach ($par1 as $key=>$par){
 				if( $par )  {
@@ -732,7 +724,7 @@ class KcController extends Zend_Controller_Action
 		$this->view->type = 'images';
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
-		$this->view->publicPath = $this->_config->kcPath;
+		$this->view->publicPath = $this->_kcfiles->kcPath;
 
 	}
 
@@ -746,7 +738,7 @@ class KcController extends Zend_Controller_Action
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
 		
-		$data = Application_Model_kcBrowser::act_init($typeDir,$this->getSessionDir());
+		$data = $this->_kcfiles->init_browser($typeDir,$this->getSessionDir());
 		$this->_helper->json->sendJson($data);
 	}
 
@@ -756,7 +748,7 @@ class KcController extends Zend_Controller_Action
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
 		if( !isset($zf_kceditor->sessionDir) ) {
-			$sessionDir = trim($this->_config->imagesDir,'/');
+			$sessionDir = trim($this->_kcfiles->imagesDir,'/');
 			$zf_kceditor->sessionDir = $sessionDir;
 		}
 		return $zf_kceditor->sessionDir;
