@@ -571,8 +571,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				return $dir;
 			$failed[] = $dir;
 		}
-	
-		return count($failed) ? $failed : true;
+		$ne = count($failed);
+		
+		return ($ne == 0) ? true : $ne;
 	}
 	
 	/** Get the content of the given directory. Returns an array with filenames

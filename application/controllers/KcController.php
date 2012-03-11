@@ -33,6 +33,7 @@ class KcController extends Zend_Controller_Action
 
 		$layout = Zend_Layout::getMvcInstance();
 		$layout->disableLayout();
+		$this->view->layout()->disableLayout();
 	}
 	
 	public function indexAction()
@@ -44,7 +45,7 @@ class KcController extends Zend_Controller_Action
 		//$contextSwitch =$this->_helper->contextSwitch();
 		//$contextSwitch->initContext();
 	
-		$this->_helper->viewRenderer->setNoRender();
+		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir',null);
 		$file_name = $request->getParam('file',null);
@@ -128,7 +129,7 @@ class KcController extends Zend_Controller_Action
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$newDir = $request->getParam('newDir');
-		$allowed = $this->_kcfiles->getParam('access/dirs/create');//$this->_kcfiles->access->dirs->create;
+		$allowed = $this->_kcfiles->access['dirs']['create'];
 		if( !isset($dir) || !isset($newDir) || !$allowed ){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
@@ -148,22 +149,33 @@ class KcController extends Zend_Controller_Action
 			return ;
 		}
 		$dir1 = $this->_uploadDir.'/'.$dir.'/'.$newDir;
-		if (file_exists($dir1)) {
+		$dir2 = $this->_uploadDir.'/.thumbs/'.$dir.'/'.$newDir;
+		if (file_exists($dir1) || file_exists($dir2)) {
 			$this->_helper->json->sendJson(array('error' => "A file or folder with that name already exists."));
 			return ;
 		}
-		if (!@mkdir($dir1,$this->_kcfiles->getParam('dirPerms')) ) {
+		$perm = $this->_kcfiles->dirPerms;
+		if (!@mkdir($dir1, $perm) ) {
 			$msg = $this->view->translator->_("Cannot create {dir} folder.");
 			$msg = str_replace("{dir}", $newDir, $msg);
 			$data = array('error' => $msg);
 		}
 		else{
-			$data = array('result'=>true);
+			if (!@mkdir($dir2, $perm) ) {
+				$msg = $this->view->translator->_("Cannot create {dir} folder.");
+				$msg = str_replace("{dir}", $newDir, $msg);
+				rmdir($dir1);
+				$data = array('error' => $msg);
+			}
+			else {
+				$data = array('result'=>true);
+			}
 		}
 		$this->_helper->json->sendJson($data);
 	
 		return true;
 	}
+	
 	public function renamedirAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -233,13 +245,14 @@ class KcController extends Zend_Controller_Action
 			$this->_kcfiles->prune($thumbDir);
 		}
 		
-		$result = !$this->_kcfiles->prune($directory, false);
+		$result = $this->_kcfiles->prune($directory, false);
 		if( $result === true ) {
 			$data = array('result'=>true);
 		} 
 		else {
-			$data = array(	'error'	=>	"Failed to delete {count} files/folders.",
-							'count' => 	count($result)	);
+			$msg = $this->view->translator->_("Failed to delete {count} files/folders.");
+			$msg = str_replace("{count}", $result, $msg);
+			$data = array('error' => $msg);
 		}
 		$this->_helper->json->sendJson($data);
 	}
@@ -418,10 +431,10 @@ class KcController extends Zend_Controller_Action
 	}
 	
 	public function downloaddirAction(){
-		$this->_helper->viewRenderer->setNoRender();
+		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
-		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
+		$allowed = !$this->_kcfiles->denyZipDownload;
 		if (!isset($dir) || !$allowed){
 			return $this->_helper->json->sendJson(array('error' => "Unknown error."));
 		}
@@ -433,16 +446,17 @@ class KcController extends Zend_Controller_Action
 		$response->setHeader('Content-Type', 'application/x-zip');
 		$response->setHeader('Content-Disposition', 'attachment; filename="' . str_replace('"', "_", $filename) . '"');
 		$response->setHeader('Content-Length',filesize($file));
+		
 		readfile($file);
 		unlink($file);
 	}
 	
 	public function downloadselectedAction(){
-		$this->_helper->viewRenderer->setNoRender();
+		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$files = $request->getParam('files');
-		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
+		$allowed = !$this->_kcfiles->denyZipDownload;
 		$hiddens = $this->_kcfiles->filterHidden($files);
 		$filespath = $this->_kcfiles->prepend($this->_uploadDir.'/'.$dir.'/',$files);
 		$readable = $this->_kcfiles->checkReadable($filespath);
@@ -462,7 +476,7 @@ class KcController extends Zend_Controller_Action
 	}
 	
 	public function downloadclipboardAction(){
-		$this->_helper->viewRenderer->setNoRender();
+		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
 		$files = $request->getParam('files');
 		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
@@ -503,7 +517,7 @@ class KcController extends Zend_Controller_Action
 			if( $client_mtime == $mtime)
 			{
 				$response->setRawHeader('HTTP/1.1 304 Not Modified');
-				$this->_helper->viewRenderer->setNoRender();
+				$this->_helper->viewRenderer->setNoRender(true);
 				return;
 			}
 		}
@@ -537,7 +551,7 @@ class KcController extends Zend_Controller_Action
 			if( $client_mtime == $mtime)
 			{
 				$response->setRawHeader('HTTP/1.1 304 Not Modified');
-				$this->_helper->viewRenderer->setNoRender();
+				$this->_helper->viewRenderer->setNoRender(true);
 				return;
 			}
 		}
@@ -568,7 +582,7 @@ class KcController extends Zend_Controller_Action
 			if( $client_mtime == $mtime)
 			{
 				$response->setRawHeader('HTTP/1.1 304 Not Modified');
-				$this->_helper->viewRenderer->setNoRender();
+				$this->_helper->viewRenderer->setNoRender(true);
 				return;
 			}
 		}
