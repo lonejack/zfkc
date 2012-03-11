@@ -479,7 +479,7 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
 		$files = $request->getParam('files');
-		$allowed = !$this->_kcfiles->access['files']['denyZipDownload'];
+		$allowed = !$this->_kcfiles->denyZipDownload;
 		$hiddens = $this->_kcfiles->filterHidden($files);
 		$filespath = $this->_kcfiles->prepend($this->_uploadDir.'/',$files);
 		$readable = $this->_kcfiles->checkReadable($filespath);
