@@ -716,6 +716,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $data;
 	}
 	
+	function removeTypeFromPath($path) {
+		return preg_match('/^[^\/]*\/(.*)$/', $path, $patt)
+		? $patt[1] : "";
+	}
+	
 	function getParam($param, $default = null ){
 		$list = explode('/', $param);
 		$start = $this->_config;

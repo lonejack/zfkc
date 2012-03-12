@@ -704,7 +704,7 @@ class KcController extends Zend_Controller_Action
 		$browser['check4Update'] = 'false'; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
 		$browser['type'] = 'images';
 		$kcsession = Zend_Session::namespaceGet('KcFinder');
-		$browser['dir'] = 'images/public';//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
+		$browser['dir'] = $this->getSessionDir();//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
 		$browser['uploadURL'] = $this->_kcfiles->uploadURL;
 		$browser['thumbsDir'] = $this->_kcfiles->thumbsDir;
 		$browser['setOpener'] = false;
@@ -746,13 +746,14 @@ class KcController extends Zend_Controller_Action
 	{
 		
 		$mtime = @filemtime(__FILE__);
-		$uploadDir = $this->_uploadDir;
+		
 		$typeDir = $this->_uploadDir.self::TYPE;
+		$dir = $this->_kcfiles->removeTypeFromPath($this->getSessionDir());
 		
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
 		
-		$data = $this->_kcfiles->init_browser($typeDir,$this->getSessionDir());
+		$data = $this->_kcfiles->init_browser($typeDir,$dir);
 		$this->_helper->json->sendJson($data);
 	}
 
