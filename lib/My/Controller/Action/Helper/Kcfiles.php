@@ -401,6 +401,22 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * Folder methods
 	 */
 	
+	public function getSessionDir(){
+
+		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
+		if( !isset($zf_kceditor->sessionDir) ) {
+			$sessionDir = trim($this->_kcfiles->imagesDir,'/');
+			$zf_kceditor->sessionDir = $sessionDir;
+		}
+		return $zf_kceditor->sessionDir;
+	}
+
+	public function setSessionDir($dir){
+
+		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
+		$zf_kceditor->sessionDir = $dir;
+	}
+	
 	/**
 	 *
 	 * @param path(string) $upload_dir absolute path to upload dir
@@ -522,7 +538,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				'hasDirs' => $hasDirs
 		);
 
-
+		$check_dir = "{$this->_config['uploadDir']}/{$this->getSessionDir()}"; 
+		if ($dir == $check_dir)
+			$info['current'] = true;
 
 		return $info;
 	}
@@ -668,30 +686,27 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return self::LINUX;
 	}
 	
-	function getTree($baseDir, $dpath, $index=0) {
+	protected function _getTree($baseDir, $dpath, $index=0) {
 	
 		static $sub_dir;
 		$paths = array();
 		if( $index == 0 )
 		{
-				
 			//build the tree on $path
 			$sub_dir = explode("/", $dpath);
 			$paths = $this->getDirInfo($baseDir);
 		}
-	
-	
-	
+		
 		/* search for subdirs under basedir */
 		$sub_paths = $this->getDirs($baseDir);
 		if( is_array($sub_paths) )
 		{
-				
+			
 			foreach ($sub_paths as $key => $nPage)
 			{
 				if( isset($sub_dir[$index]) && $nPage['name'] == $sub_dir[$index] )
 				{
-					$sub_paths[$key]['dirs']= $this->getTree($baseDir.'/'.$sub_dir[$index], null, $index+1);
+					$sub_paths[$key]['dirs']= $this->_getTree($baseDir.'/'.$sub_dir[$index], null, $index+1);
 				}
 			}
 			$paths['dirs'] = $sub_paths;
@@ -703,7 +718,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	
 		//$tree = self::getDirInfo($uploadDir);
 	
-		$tree = $this->getTree($uploadDir, $sessionDir);
+		$tree = $this->_getTree($uploadDir, $sessionDir);
 		if (!is_array($tree['dirs']) || !count($tree['dirs']))
 			unset($tree['dirs']);
 		$files = $this->getFiles($uploadDir,$sessionDir);

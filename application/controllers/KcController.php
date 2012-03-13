@@ -10,6 +10,10 @@ class KcController extends Zend_Controller_Action
 	//protected $_uploadUrl;
 	const TYPE = '/images';
 	protected $_types;
+	/**
+	 * 
+	 * @var My_Controller_Action_Helper_Kcfiles
+	 */
 	protected $_kcfiles;
 
 
@@ -21,9 +25,6 @@ class KcController extends Zend_Controller_Action
 		
 		$this->_realpath = $this->_kcfiles->normalize(PUBLIC_PATH.'/'.$this->_kcfiles->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_kcfiles->uploadURL;
-		
-		//$access_file = $this->_kcfiles->access['files'];
-		//$this->_uploadUrl = $this->_kcfiles->imagesDir;
 		
 		
 		$request = $this->getRequest();
@@ -115,7 +116,7 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
-		$this->setSessionDir($dir);
+		$this->_kcfiles->setSessionDir($dir);
 		$dirWritable = $this->_kcfiles->isWritable($directory);
 		$files = $this->_kcfiles->getFiles($this->_uploadDir,$dir);
 		$data = array (
@@ -704,7 +705,7 @@ class KcController extends Zend_Controller_Action
 		$browser['check4Update'] = 'false'; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
 		$browser['type'] = 'images';
 		$kcsession = Zend_Session::namespaceGet('KcFinder');
-		$browser['dir'] = $this->getSessionDir();//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
+		$browser['dir'] = $this->_kcfiles->getSessionDir();//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
 		$browser['uploadURL'] = $this->_kcfiles->uploadURL;
 		$browser['thumbsDir'] = $this->_kcfiles->thumbsDir;
 		$browser['setOpener'] = false;
@@ -748,7 +749,7 @@ class KcController extends Zend_Controller_Action
 		$mtime = @filemtime(__FILE__);
 		
 		$typeDir = $this->_uploadDir.self::TYPE;
-		$dir = $this->_kcfiles->removeTypeFromPath($this->getSessionDir());
+		$dir = $this->_kcfiles->removeTypeFromPath($this->_kcfiles->getSessionDir());
 		
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
@@ -757,23 +758,6 @@ class KcController extends Zend_Controller_Action
 		$this->_helper->json->sendJson($data);
 	}
 
-	
-	
-	protected function getSessionDir(){
-
-		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
-		if( !isset($zf_kceditor->sessionDir) ) {
-			$sessionDir = trim($this->_kcfiles->imagesDir,'/');
-			$zf_kceditor->sessionDir = $sessionDir;
-		}
-		return $zf_kceditor->sessionDir;
-	}
-
-	protected function setSessionDir($dir){
-
-		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
-		$zf_kceditor->sessionDir = $dir;
-	}
 	
 }
 
