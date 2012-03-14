@@ -48,7 +48,8 @@ class KcController extends Zend_Controller_Action
 	
 		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
-		$dir = $request->getParam('dir',null);
+		$dir = $request->getParam('dir');
+		if(empty($dir) ) $dir = $this->_types;
 		$file_name = $request->getParam('file',null);
 		$default = true;
 		$lastcode = null;
@@ -747,14 +748,14 @@ class KcController extends Zend_Controller_Action
 	{
 		
 		$mtime = @filemtime(__FILE__);
-		
-		$typeDir = $this->_uploadDir.self::TYPE;
 		$dir = $this->_kcfiles->removeTypeFromPath($this->_kcfiles->getSessionDir());
+		if(empty($dir))
+			$dir = $this->_types;
 		
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
 		
-		$data = $this->_kcfiles->init_browser($typeDir,$dir);
+		$data = $this->_kcfiles->init_browser($this->_uploadDir,$dir);
 		$this->_helper->json->sendJson($data);
 	}
 

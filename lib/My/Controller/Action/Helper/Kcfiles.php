@@ -709,7 +709,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 					$sub_paths[$key]['dirs']= $this->_getTree($baseDir.'/'.$sub_dir[$index], null, $index+1);
 				}
 			}
-			$paths['dirs'] = $sub_paths;
+			if( $index == 0 )
+				$paths['dirs'] = $sub_paths;
+			else
+				$paths = $sub_paths;
 		}
 		return $paths;
 	}
