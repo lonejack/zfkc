@@ -749,13 +749,11 @@ class KcController extends Zend_Controller_Action
 		
 		$mtime = @filemtime(__FILE__);
 		$dir = $this->_kcfiles->removeTypeFromPath($this->_kcfiles->getSessionDir());
-		if(empty($dir))
-			$dir = $this->_types;
 		
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
 		
-		$data = $this->_kcfiles->init_browser($this->_uploadDir,$dir);
+		$data = $this->_kcfiles->init_browser($this->_uploadDir.'/'.$this->_types,$dir);
 		$this->_helper->json->sendJson($data);
 	}
 

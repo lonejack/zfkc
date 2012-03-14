@@ -188,7 +188,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		if( $destination === false )
 			return false;
 		$result = @imagecopyresampled($destination, $source, 0, 0, 0, 0, 
-					$thumbWidth, $thumbHeight, $src_widht, $src_height);
+					$dst_width, $dst_height, $src_widht, $src_height);
 		if( !$result )
 			return false;
 		return $destination; 
