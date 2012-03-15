@@ -647,24 +647,6 @@ class KcController extends Zend_Controller_Action
 		}
 		$this->view->data = $items;
 
-		
-		
-/*		
-		$this->render();
-		$response = $this->getResponse();
-		$data = $response->getBody();
-		$directory = APPLICATION_PATH.'/language/'.$language;
-		$destination = $directory.'/kc.csv';
-		if(!is_dir($directory)) {
-			mkdir($directory);
-			chmod($directory, 0775);
-		}	
-		
-		$file = fopen($destination,'w+');
-		fwrite($file,$data);
-		fclose($file);
-		chmod($destination, 0664);
-*/		
 	}
 
 	public function browseAction()
@@ -755,6 +737,29 @@ class KcController extends Zend_Controller_Action
 		
 		$data = $this->_kcfiles->init_browser($this->_uploadDir.'/'.$this->_types,$dir);
 		$this->_helper->json->sendJson($data);
+	}
+	
+	public function uploadAction(){
+		/*
+		 *   'controller' => 'Kc',
+  'action' => 'upload',
+  'type' => 'images',
+  'lng' => 'it',
+  'act' => 'upload',
+  'dir' => 'images/Turchia/giorno24',
+)  
+		 */
+		$this->_helper->viewRenderer->setNoRender(true);
+		$request = $this->getRequest();
+		$dir = $request->getParam('dir');
+		$adapter = new Zend_File_Transfer_Adapter_Http();
+		
+		$adapter->setDestination($this->_uploadDir.'/'.$dir);
+		
+		if (!$adapter->receive()) {
+			$messages = $adapter->getMessages();
+			echo implode("\n", $messages);
+		}
 	}
 
 	
