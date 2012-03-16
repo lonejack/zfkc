@@ -4,13 +4,13 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 	protected $_defaults = array();
 	public function match($path, $partial = false)
 	{
-		$path = trim($path, self::URI_DELIMITER);
+		$path = trim($path, '/');
 		if( strncmp ( $path, $this->_route, strlen($this->_route)) != 0 )
 		{
 			return false;
 		}
-		$path = trim(substr($path, strlen($this->_route)), self::URI_DELIMITER);
-		$pathex = explode(self::URI_DELIMITER, $path);
+		$path = trim(substr($path, strlen($this->_route)), '/');
+		$pathex = explode('/', $path);
 		$front = Zend_Controller_Front::getInstance();
 		$request = $front->getRequest();
 		$defaults = $this->getDefaults();

@@ -207,8 +207,16 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				preg_match('/^[1-9][0-9]*$/', $options[1]) !== false ){
 			return false;
 		}
-		$keys = array('width','height','type','sizestr','mime','channels','bits');
-		return array_combine ( $keys , $options );
+		$options['width'] 	= $options[0];
+		$options['height']	= $options[1];
+		$options['type'] 	= $options[2];
+		$options['sizestr'] = $options[3];
+		unset($options[0]);
+		unset($options[1]);
+		unset($options[2]);
+		unset($options[3]);
+		
+		return $options ;
 
 	}
 

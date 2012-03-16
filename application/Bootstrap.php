@@ -7,6 +7,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 	protected function _initSession()
 	{
 		Zend_Session::start();
+		Zend_Layout::startMvc()->setLayout('main');
 	}
 	
 	protected function _initView()
@@ -27,6 +28,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$router->addRoute('js/kcfinder', $kcfinder);
 
 	}
+	
+	
 	
 	protected function _initHelpers(){
 		

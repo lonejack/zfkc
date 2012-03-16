@@ -11,7 +11,7 @@ class KcController extends Zend_Controller_Action
 	const TYPE = '/images';
 	protected $_types;
 	/**
-	 * 
+	 *
 	 * @var My_Controller_Action_Helper_Kcfiles
 	 */
 	protected $_kcfiles;
@@ -22,11 +22,11 @@ class KcController extends Zend_Controller_Action
 		/* Initialize action controller here */
 		$config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
 		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($config);
-		
+
 		$this->_realpath = $this->_kcfiles->normalize(PUBLIC_PATH.'/'.$this->_kcfiles->kcPath);
 		$this->_uploadDir = PUBLIC_PATH.$this->_kcfiles->uploadURL;
-		
-		
+
+
 		$request = $this->getRequest();
 
 		// define types we're working on
@@ -36,16 +36,16 @@ class KcController extends Zend_Controller_Action
 		$layout->disableLayout();
 		$this->view->layout()->disableLayout();
 	}
-	
+
 	public function indexAction()
 	{
 		// action body
 	}
-	
+
 	public function thumbAction(){
 		//$contextSwitch =$this->_helper->contextSwitch();
 		//$contextSwitch->initContext();
-	
+
 		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -53,11 +53,11 @@ class KcController extends Zend_Controller_Action
 		$file_name = $request->getParam('file',null);
 		$default = true;
 		$lastcode = null;
-	
+
 		if( isset($dir) && isset($file_name) )
 		{
 			$file= $dir.'/'.$file_name;
-	
+
 			// check existence
 			try {
 				$file_real = $this->_kcfiles->existFile(
@@ -73,7 +73,7 @@ class KcController extends Zend_Controller_Action
 				 */
 			}
 		}
-	
+
 		if( isset($default ) )
 		{
 			$ext = $this->_kcfiles->getExtension($file_name);
@@ -86,30 +86,30 @@ class KcController extends Zend_Controller_Action
 		$ext = strtolower( $this->_kcfiles->getExtension($thumb) );
 		if( $ext != 'png' )
 			$ext = 'jpeg';
-	
+
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', "image/$ext",true);
 		readfile($thumb);
-	
+
 	}
-	
+
 	public function expandAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
 		$data = array('dirs' => $this->_kcfiles->getDirs($this->_uploadDir.'/'.$dir));
 		$this->_helper->json->sendJson($data);
 	}
-	
+
 	public function chdirAction()
 	{
-	
+
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir','');
-	
+
 		try {
 			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
 		} catch (Exception $e){
-	
+
 			$message = $e->getMessage();
 			/*
 			 * TODO: store the message to log
@@ -126,7 +126,7 @@ class KcController extends Zend_Controller_Action
 		);
 		$this->_helper->json->sendJson($data);
 	}
-	
+
 	public function newdirAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -141,7 +141,7 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => "Please enter new folder name."));
 			return ;
 		}
-	
+
 		if (preg_match('/[\/\\\\]/s', $newDir)){
 			$this->_helper->json->sendJson(array('error' => "Unallowable characters in folder name."));
 			return ;
@@ -174,10 +174,10 @@ class KcController extends Zend_Controller_Action
 			}
 		}
 		$this->_helper->json->sendJson($data);
-	
+
 		return true;
 	}
-	
+
 	public function renamedirAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -191,12 +191,12 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => "Please enter new folder name."));
 			return ;
 		}
-		
+
 		if (preg_match('/[\/\\\\]/s', $newName)) {
 			$this->_helper->json->sendJson(array('error' => 'Unallowable characters in folder name.'));
 			return ;
 		}
-		
+
 		if (substr($newName, 0, 1) == "."){
 			$this->_helper->json->sendJson(array('error' => "Folder name shouldn't begins with '.'"));
 			return ;
@@ -217,15 +217,15 @@ class KcController extends Zend_Controller_Action
 				return;
 			}
 		}
-		
+
 		$data = array('name'=>$newName);
 		$this->_helper->json->sendJson($data);
 	}
-		
+
 	public function deletedirAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
-		
+
 		$allowed = $this->_kcfiles->access['dirs']['delete'];
 		if( !isset($dir)  ||!$allowed ){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
@@ -237,20 +237,20 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
-		
+
 		if (!$this->_kcfiles->isWritable($directory)){
 			$this->_helper->json->sendJson(array('error' => "Cannot delete the folder."));
 		}
-		
+
 		$thumbDir = $this->_uploadDir .'/.thumbs/'. $dir;
 		if (is_dir($thumbDir)) {
 			$this->_kcfiles->prune($thumbDir);
 		}
-		
+
 		$result = $this->_kcfiles->prune($directory, false);
 		if( $result === true ) {
 			$data = array('result'=>true);
-		} 
+		}
 		else {
 			$msg = $this->view->translator->_("Failed to delete {count} files/folders.");
 			$msg = str_replace("{count}", $result, $msg);
@@ -258,20 +258,20 @@ class KcController extends Zend_Controller_Action
 		}
 		$this->_helper->json->sendJson($data);
 	}
-	
+
 	public function renameAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$oldName = $request->getParam('file');
-	
+
 		$newName = $request->getParam('newName');
 		$allowed = $this->_kcfiles->access['files']['rename'];
-	
+
 		if( !isset($dir) || !isset($oldName) || !isset($newName) || !$allowed ) {
 			$this->_helper->json->sendJson(	array('error' => 'Unknown error.')) ;
 			return;
 		}
-	
+
 		try {
 			$directory = $this->_kcfiles->checkDir($this->_uploadDir, $dir);
 			$filename = $this->_kcfiles->existFile($this->_uploadDir.'/'.$dir, $oldName);
@@ -293,7 +293,7 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => 'A file or folder with that name already exists.'));
 			return;
 		}
-	
+
 		if( rename($filename, $new) ){
 			// now rename the thumb
 			$thumb_old = $this->_uploadDir.'/.thumbs/'.$dir.'/'.$oldName;
@@ -304,7 +304,7 @@ class KcController extends Zend_Controller_Action
 		$data = array('result'=>true);
 		$this->_helper->json->sendJson($data);
 	}
-	
+
 	public function deleteAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
@@ -325,7 +325,7 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
-	
+
 		if( !is_writable($filename) ){
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return;
@@ -334,15 +334,15 @@ class KcController extends Zend_Controller_Action
 			unlink($this->_uploadDir.'/.thumbs/'.$dir.'/'.$file);
 		}
 		$this->_helper->json->sendJson(array('result'=>true));
-	
+
 	}
-	
+
 	public function copycbdAction($doCopy=true){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
 		$files = $request->getParam('files');
 		$allowed = $this->_kcfiles->access['files']['copy'];
-	
+
 		try {
 			if( !isset($dir) || !isset($files) || !$allowed )
 				throw new Exception('Invalid parameters!',-1);
@@ -353,7 +353,7 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
-	
+
 		if( !is_writable($this->_uploadDir.'/'.$dir) ){
 			// this should be log to the admin
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
@@ -366,7 +366,7 @@ class KcController extends Zend_Controller_Action
 			if( true != $command ( $fileOrig, $fileDest ) ) {
 				$errors=true;
 			}
-	
+
 		}
 		foreach ($files as $fileOrig) {
 			$thumbDest = $this->_uploadDir.'/.thumbs/'.$dir.'/'.basename($fileOrig);
@@ -383,11 +383,11 @@ class KcController extends Zend_Controller_Action
 		}
 		$this->_helper->json->sendJson($data);
 	}
-	
+
 	public function movecbdAction(){
 		$this->copycbdAction(false);
 	}
-	
+
 	public function removecbdAction(){
 		$request = $this->getRequest();
 		$files = $request->getParam('files');
@@ -401,11 +401,11 @@ class KcController extends Zend_Controller_Action
 			$this->_helper->json->sendJson(array('error' => 'Unknown error.'));
 			return ;
 		}
-		
+
 		$error = array();
 		foreach($files as $file) {
 			$file = $this->_kcfiles->normalize($file);
-			if (substr($file, 0, 1) == ".") 
+			if (substr($file, 0, 1) == ".")
 				continue;
 			//$type = explode("/", $file);
 			//$type = $type[0];
@@ -417,8 +417,8 @@ class KcController extends Zend_Controller_Action
 			if (!is_file($filepath))
 				$error[$filepath] = "The file '{file}' does not exist.";
 			elseif (!@unlink($filepath))
-				$error[$filepath] = "Cannot delete '{file}'.";
-			if (is_file($thumbpath)) 
+			$error[$filepath] = "Cannot delete '{file}'.";
+			if (is_file($thumbpath))
 				@unlink($thumbpath);
 		}
 		if (count($error)) {
@@ -431,7 +431,7 @@ class KcController extends Zend_Controller_Action
 		}
 		return $this->_helper->json->sendJson(array('result' => true));
 	}
-	
+
 	public function downloaddirAction(){
 		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
@@ -448,11 +448,11 @@ class KcController extends Zend_Controller_Action
 		$response->setHeader('Content-Type', 'application/x-zip');
 		$response->setHeader('Content-Disposition', 'attachment; filename="' . str_replace('"', "_", $filename) . '"');
 		$response->setHeader('Content-Length',filesize($file));
-		
+
 		readfile($file);
 		unlink($file);
 	}
-	
+
 	public function downloadselectedAction(){
 		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
@@ -476,7 +476,7 @@ class KcController extends Zend_Controller_Action
 		readfile($file);
 		unlink($file);
 	}
-	
+
 	public function downloadclipboardAction(){
 		$this->_helper->viewRenderer->setNoRender(true);
 		$request = $this->getRequest();
@@ -499,7 +499,7 @@ class KcController extends Zend_Controller_Action
 		readfile($file);
 		unlink($file);
 	}
-	
+
 	public function styleAction()
 	{
 		$path = realpath(dirname(__FILE__).'/../views/scripts/kc/style.phtml');
@@ -536,7 +536,7 @@ class KcController extends Zend_Controller_Action
 		foreach ($this->view->files as $file) {
 			$fmtime = filemtime($file);
 			if (!isset($mtime) || ($fmtime > $mtime))
-			$mtime = $fmtime;
+				$mtime = $fmtime;
 		}
 
 		$response = $this->getResponse();
@@ -568,13 +568,13 @@ class KcController extends Zend_Controller_Action
 		$locale_applied = $this->view->translator->getLocale();
 
 		$translation_dir = realpath(APPLICATION_PATH.self::DIR_LANGUAGES);
-		
+
 		// get the correct language
 		$filename = $translation_dir.'/'.$locale_applied.'/kc.csv';
 		if( !file_exists($filename) ){
 			$filename = $translation_dir.'/en/kc.csv';
 		}
-		
+
 		$mtime = @filemtime($filename);
 		$request = $this->getRequest();
 		$cacheDate = $request->getHeader('If-Modified-Since');
@@ -589,7 +589,7 @@ class KcController extends Zend_Controller_Action
 			}
 		}
 		// render
-		
+
 		if (($handle = fopen($filename, "r")) !== FALSE) {
 			$data = array();
 			while (($row = fgetcsv($handle, 1000, ";")) !== FALSE) {
@@ -613,7 +613,7 @@ class KcController extends Zend_Controller_Action
 		// get the correct language
 		$request = $this->getRequest();
 		$language = $request->getParam('language','en');
-		
+
 		if ( $language != 'en' )
 			include_once APPLICATION_PATH."/models/kcLanguages/$language.php";
 		else
@@ -621,8 +621,8 @@ class KcController extends Zend_Controller_Action
 		$class = new KcTranslation();
 		$items = $class->lang;
 		$en = array_keys($items);
-		
-		
+
+
 		unset($items[$en[0]]);
 		unset($items[$en[1]]);
 		unset($items[$en[2]]);
@@ -635,15 +635,15 @@ class KcController extends Zend_Controller_Action
 		unset($en[3]);
 		unset($en[4]);
 		unset($en[5]);
-		
+
 		$this->view->keys = $en;
 		if( $language == 'en' )
 		{
 			foreach ($items as $key => $item ){
 				$items[$key]=$key;
-				
+
 			}
-				
+
 		}
 		$this->view->data = $items;
 
@@ -716,7 +716,6 @@ class KcController extends Zend_Controller_Action
 		$front = Zend_Controller_Front::getInstance();
 
 
-		$kuki['domain'] = 'zfkc.local';
 		$kuki['path'] = '/';
 		$kuki['prefix'] = 'ZFKC_';
 		$this->view->type = 'images';
@@ -728,41 +727,70 @@ class KcController extends Zend_Controller_Action
 
 	public function browseinitAction()
 	{
-		
+
 		$mtime = @filemtime(__FILE__);
 		$dir = $this->_kcfiles->removeTypeFromPath($this->_kcfiles->getSessionDir());
-		
+
 		$response = $this->getResponse();
 		$response->setHeader('Content-Type', 'text/plain; charset=utf-8',true);
-		
+
 		$data = $this->_kcfiles->init_browser($this->_uploadDir.'/'.$this->_types,$dir);
 		$this->_helper->json->sendJson($data);
 	}
-	
+
 	public function uploadAction(){
-		/*
-		 *   'controller' => 'Kc',
-  'action' => 'upload',
-  'type' => 'images',
-  'lng' => 'it',
-  'act' => 'upload',
-  'dir' => 'images/Turchia/giorno24',
-)  
-		 */
-		$this->_helper->viewRenderer->setNoRender(true);
+
+		if( !$this->_kcfiles->access['files']['upload'] ) {
+			$this->view->answer =$this->view->translator->_("Unknown error.") ;
+			return ;
+
+		}
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
-		$adapter = new Zend_File_Transfer_Adapter_Http();
-		
-		$adapter->setDestination($this->_uploadDir.'/'.$dir);
-		
-		if (!$adapter->receive()) {
-			$messages = $adapter->getMessages();
-			echo implode("\n", $messages);
+		if( !$this->_kcfiles->isWritable($this->_uploadDir.'/'.$dir) ){
+			$this->view->answer =$this->view->translator->_("Cannot access or write to upload folder.") ;
+			return ;
 		}
+
+		$file = $request->getParam('file');
+
+		$upload = new Zend_File_Transfer_Adapter_Http();
+		$files = $upload->getFileInfo();
+		$this->view->answer =$this->view->translator->_("Unknown error.") ;
+		$maxsize = $this->_kcfiles->maxsize;
+		$return = array();
+		foreach ($files as $file ) {
+			$dest_file 	= $this->_uploadDir.'/'.$dir.'/'.$file['name'];
+			$dest_thumb = $this->_uploadDir.'/.thumb'.$dir.'/'.$file['name'];
+			
+			if( is_file($this->_uploadDir.'/'.$dir.'/'.$file['name'])){
+				$this->view->answer =$this->view->translator->_("You can't upload such files.") ;
+				return ;
+			}
+			//"The uploaded file exceeds {size} bytes."
+			if( $file['size'] > $maxsize ){
+				$message =$this->view->translator->_("The uploaded file exceeds {size} bytes.") ;
+				$message = str_replace("{size}", $maxsize, $message);
+				$this->view->answer = $message;
+				return ;
+			}
+			$upload->setDestination($this->_uploadDir.'/'.$dir);
+			if (!$upload->receive()) {
+				$this->view->answer =$this->view->translator->_("You can't upload such files.") ;
+				return ;
+			}
+			$this->_kcfiles->makeThumb($dest_file, $dest_thumb);
+			$return[] = "/" . basename($file['name']);
+			
+		}
+		/* the file insn't present, now check the size.. */
+		if( count($return) == 1) {
+			$this->view->answer = $return[0];
+		}	
+		return ;
 	}
 
-	
+
 }
 
 

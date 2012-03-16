@@ -11,17 +11,13 @@
 <script src="<?=$this->publicPath?>js/helper.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>getjoiner.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>gettranslation.php?lang=<?php echo $this->language ?>" type="text/javascript"></script>
-
-
 <?php if (isset($this->browser['tinyMCE']) ): ?>
 <script src="<?= $this->tinyMCEPath ?>/tiny_mce_popup.js" type="text/javascript"></script>
 <?php endif; ?>
 <?php if (isset($this->init_theme)): ?>
 <script src="<?=$this->publicPath?><?=$this->init_theme ?>" type="text/javascript"></script>
 <?php endif; ?>
-
 <script type="text/javascript">
-
 browser.version = "<?=$this->browser['version'] ?>";
 browser.support.chromeFrame = <?=$this->browser['cromeFrame'] ?>;
 browser.support.zip = <?=$this->browser['supportZip'] ?>;
@@ -44,7 +40,7 @@ browser.opener.CKEditor.funcNum = <?php echo '2';/* $this->funcNumCkEditor */ ?>
 browser.opener.TinyMCE = true;
 <?php endif; ?>
 browser.cms = "<?=  $this->browser['cms'] ?>";
-_.kuki.domain = "<?=  $this->kuki['domain'] ?>";
+_.kuki.domain = "<?=  $this->serverUrl() ?>";
 _.kuki.path = "<?=  $this->kuki['path'] ?>";
 _.kuki.prefix = "<?=  $this->kuki['prefix'] ?>";
 $(document).ready(function() {
