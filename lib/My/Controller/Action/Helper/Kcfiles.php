@@ -6,27 +6,6 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	const LINUX 			= 1;
 	const THUMBS_DIR 		= '.thumbs';
 	const CHAR_SET      	= 'utf-8';
-	
-	/** GD resource
-	 * @var resource */
-	//protected $image;
-
-	/** Image width
-	 * @var integer */
-	//protected $width;
-
-	/** Image height
-	 * @var integer */
-	//protected $height;
-
-	/** Init error
-	 * @var bool */
-	//public $init_error = false;
-
-	/** Last builded image type constant (IMAGETYPE_XXX)
-	 * @var integer */
-	//public $type;
-
 
 	protected $_zipfile;
 
@@ -514,7 +493,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
 		if( !isset($zf_kceditor->sessionDir) ) {
-			$sessionDir = trim($this->_kcfiles->imagesDir,'/');
+			$sessionDir = trim($this->_kcfiles['imagesDir'],'/');
 			$zf_kceditor->sessionDir = $sessionDir;
 		}
 		return $zf_kceditor->sessionDir;
