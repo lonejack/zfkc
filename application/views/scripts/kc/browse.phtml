@@ -40,7 +40,7 @@ browser.opener.CKEditor.funcNum = <?php echo '2';/* $this->funcNumCkEditor */ ?>
 browser.opener.TinyMCE = true;
 <?php endif; ?>
 browser.cms = "<?=  $this->browser['cms'] ?>";
-_.kuki.domain = "<?=  $this->serverUrl() ?>";
+_.kuki.domain = "<?= $this->kuki['server'] ?>";
 _.kuki.path = "<?=  $this->kuki['path'] ?>";
 _.kuki.prefix = "<?=  $this->kuki['prefix'] ?>";
 $(document).ready(function() {

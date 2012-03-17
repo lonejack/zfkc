@@ -2,10 +2,11 @@
 
 class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_Abstract
 {
-	const WIN 			= 0;
-	const LINUX 		= 1;
-	const THUMBS_DIR 	= '.thumbs';
-
+	const WIN 				= 0;
+	const LINUX 			= 1;
+	const THUMBS_DIR 		= '.thumbs';
+	const CHAR_SET      	= 'utf-8';
+	
 	/** GD resource
 	 * @var resource */
 	//protected $image;
@@ -46,6 +47,57 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	{
 
 
+	}
+	
+	public function sendImage($image){
+		$ext = strtolower( $this->getExtension($image) );
+		if( $ext != 'png' )
+			$ext = 'jpeg';
+		
+		$this->setHeader('Content-Type',"image/$ext",true);
+		readfile($image);
+	}
+	
+	public function sendZip($file, $filename=null, $unlink=false){
+		if( is_null($filename))
+			$filename=basename($file);
+		$this->setHeader('Content-Type','application/x-zip',true)->
+		setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')->
+		setHeader('Content-Length',filesize($file));
+		readfile($file);
+		if( $unlink )
+			unlink($file);
+	}
+	
+	/**
+	 * 
+	 * @param unknown_type $type
+	 */
+	public function setHeader($header, $option = NULL, $clearall = false){
+		$response = $this->getResponse();
+		if($clearall)
+			$response->clearAllHeaders();
+		
+		switch($header){
+			default:
+				$response->setHeader($header, $option);
+				break;
+				
+			case 'Content-Type':
+				switch( $option ) {
+					case 'application/json':
+					case 'text/plain':
+					case 'text/javascript':
+						$response->setHeader('Content-Type', "$option; charset=".self::CHAR_SET);
+						break;
+					default:
+						$response->setHeader('Content-Type', $option);
+						break;
+				}
+				break;
+			
+		}
+		return $this;
 	}
 
 	/**
@@ -290,7 +342,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				($info_gd['height'] <= $this->_config['thumbHeight'])) {
 			$browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
 			// Drop only browsable types
-			if (in_array($info_gd['type'], $browsable))
+			if (!in_array($info_gd['type'], $browsable))
 				return true;
 
 			// Resize image
@@ -306,10 +358,58 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		chmod($destination, $this->_config['filePerms']);
 		return ;
 	}
+	
 
 	/***********************************
 	 * FILES METHODS
 	***********************************/
+	function getThumbDir($subdir = null, $end_directory_separator = true){
+		$path =  $this->_config['uploadDir']. DIRECTORY_SEPARATOR. self::THUMBS_DIR;
+		if(!is_array($subdir))
+			$subdir = array($subdir);
+		if( isset($subdir) ) {
+			$path = rtrim($path,DIRECTORY_SEPARATOR);
+			foreach ($subdir as $item )
+				$path .= DIRECTORY_SEPARATOR.$item;
+		} 
+		
+		if($end_directory_separator)
+			$path .= DIRECTORY_SEPARATOR;
+		return $path;
+	}
+	
+	function getUploadDir($subdir = null, $end_directory_separator = true){
+		$path = $this->_config['uploadDir'];
+		if(!is_array($subdir))
+			$subdir = array($subdir);
+		if( isset($subdir) ) {
+			$path = rtrim($path,DIRECTORY_SEPARATOR);
+			foreach ($subdir as $item )
+				$path .= DIRECTORY_SEPARATOR.$item;
+		} 
+		if($end_directory_separator && substr($path, -1) !== DIRECTORY_SEPARATOR) {
+			$path .= DIRECTORY_SEPARATOR;
+		}			
+		return $path;
+	}
+	
+	function prependPath($path, &$subject, $checkExistence = true ){
+		$path =rtrim($path,'/');
+		if(is_array($subject)) {
+			foreach ($subject as $key => $item)
+			{
+				$subject[$key] = $path.DIRECTORY_SEPARATOR.$item;
+				if( $checkExistence && !file_exists($subject[$key]) )
+					return false;
+			}
+		}
+		else {
+			$subject = $path.DIRECTORY_SEPARATOR.$subject;
+			if( $checkExistence && !file_exists($subject) )
+				return false;
+		}
+		return true;
+	}
 	
 	/** Get the extension from filename
 	 * @param string $file
@@ -321,28 +421,29 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		? ($toLower ? strtolower($patt[1]) : $patt[1]) : "";
 	}
 	
-	function existFile( $upload_dir, $names ) {
+	function existFile( $names ) {
 		if(is_string($names)) {
 			$names = array($names);
 			$retString = true;
 		}
 		$list = array();
 		foreach($names as $name) {
-			$file = realpath($upload_dir.'/'. $name);
+			$name = rtrim($name,DIRECTORY_SEPARATOR);
+			$file = realpath($name);
 			$list[]=$file;
 				
-			if( strncmp($upload_dir, $file, strlen($upload_dir))  )
+			if( $file != $name  )
 			{
-				throw new Exception('Invalid request!',-1);
+				return false;//throw new Exception('Invalid request!',-1);
 			}
 	
 			if ( !is_file($file) )
 			{
-				throw new Exception("file $name is Inexistant!",1);
+				return false;//throw new Exception("file $name is Inexistant!",1);
 			}
 			if( !is_readable($file) )
 			{
-				throw new Exception("file $name is unreadable",2);
+				return false;//throw new Exception("file $name is unreadable",2);
 			}
 	
 		}
@@ -431,20 +532,22 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param path(string) $dir relative path requested
 	 * @throws Exception
 	 */
-	function checkDir( $upload_dir, $dir ) {
-		$directory = realpath($upload_dir.'/'. $dir);
-		if( strncmp($upload_dir, $directory, strlen($upload_dir))  )
+	function checkDir( $dir ) {
+		$dir = rtrim($dir,DIRECTORY_SEPARATOR);
+		$directory = realpath($dir);
+		
+		if( $directory != $dir  )
 		{
-			throw new Exception('Invalid request!', 3);
+			return false; //throw new Exception('Invalid request!', 3);
 		}
 
 		if ( !is_dir($directory) )
-			throw new Exception('Inexistant folder.', 4);
+			return false; //throw new Exception('Inexistant folder.', 4);
 
 		if( !is_readable($directory) )
-			throw new Exception('Inaccessible folder.', 5);
+			return false; //throw new Exception('Inaccessible folder.', 5);
 
-		return $directory;
+		return true;
 	}
 	
 	/** Normalize the given path. On Windows servers backslash will be replaced
