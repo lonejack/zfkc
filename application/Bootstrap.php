@@ -16,6 +16,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$layout = $this->getResource ( 'layout' );
 		$view = $layout->getView();
 		$view->doctype('XHTML1_STRICT');
+		
 		return $view;
 	}
 

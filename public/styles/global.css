@@ -1,0 +1,45 @@
+@CHARSET "UTF-8";
+div.menu {
+	float:left;
+	-webkit-border-radius: 4px;
+	background-color: #112233;
+	color: white;
+	display:block;
+	margin: 5px 10px 5px 10px;
+}
+.menu ul {
+	padding: 10px 5px 5px 10px;
+	
+}
+
+.menu ul li {
+	list-style-type:none;
+	width: 120px;
+	float:left;
+	text-align: center;
+}
+
+
+.menu ul li:hover {
+	background-color: #89b2ff;
+}
+
+.menu a {
+	text-decoration: none;
+	color: white;
+}
+
+.menu a {
+	
+	
+}
+
+.main {
+	float: left;
+	width: 720px;
+	padding: 10px 5px 5px 10px;
+}
+
+.main dd, .main dt {
+	margin-left: 5px;
+}

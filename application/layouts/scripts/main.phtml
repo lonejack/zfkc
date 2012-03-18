@@ -4,14 +4,25 @@
 <head>
 <meta http-equiv="Content-Type"
 	content="application/xhtml+xml; charset=utf-8" />
+	<?php echo $this->headLink()->appendStylesheet('/styles/global.css') ?>
 	<?php echo $this->headTitle() ?>
 	<?php echo $this->headStyle() ?>
 	<?php echo $this->headScript() ?>
   <!-- ciao -->
 </head>
 <body>
-	<div class="content">
+	<div>
+	<div class="menu" style="height: 250px; width: 150px;">
+	<ul>
+	<li><a href="/js/kcfinder/browse.php?type=images&lng=it">Stand Alone</a></li>
+	<li><a href="/article/edit/id/1">CK Editor</a></li>
+	</ul>
+	</div>
+	<div class="main">
 	<?php echo $this->layout()->content; ?>
+	
+	</p>
+	</div>
 	</div>
 </body>
 </html>

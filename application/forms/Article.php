@@ -31,8 +31,6 @@ class Application_Form_Article extends Zend_Form
     {
         /* Form Elements & Other Definitions Here ... */
     	$this->setElementsBelongTo('artbuilder');
-    	$this->addElement('hash', self::ANTI_CRSF_KEY, array('salt' => 'unique'));
-        $this->addElement('hidden', 'id');
         $this->addElement('text', 'title', array(
             'label'    => 'Titolo: ',
             'required' => true
@@ -41,6 +39,8 @@ class Application_Form_Article extends Zend_Form
             'label'    => 'Contenuto',
             'required' => true
         ));
+    	$this->addElement('hash', self::ANTI_CRSF_KEY, array('salt' => 'unique'));
+    	$this->addElement('hidden', 'id');
         $this->setAttrib('accept-charset', 'utf-8');
     }
 }
