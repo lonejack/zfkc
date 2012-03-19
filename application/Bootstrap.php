@@ -17,6 +17,10 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$view = $layout->getView();
 		$view->doctype('XHTML1_STRICT');
 		
+		$config = new Zend_Config_Xml ( APPLICATION_PATH . '/configs/navigation.xml', 'nav' );
+		$container = new Zend_Navigation ( $config );
+		$view->navigation ( $container );
+		
 		return $view;
 	}
 
@@ -29,8 +33,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$router->addRoute('js/kcfinder', $kcfinder);
 
 	}
-	
-	
 	
 	protected function _initHelpers(){
 		

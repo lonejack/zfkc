@@ -6,6 +6,7 @@ div.menu {
 	color: white;
 	display:block;
 	margin: 5px 10px 5px 10px;
+	font-size: 10px;
 }
 .menu ul {
 	padding: 10px 5px 5px 10px;
@@ -16,13 +17,18 @@ div.menu {
 	list-style-type:none;
 	width: 120px;
 	float:left;
-	text-align: center;
+	text-align: left;
 }
 
 
-.menu ul li:hover {
+.menu li:hover {
 	background-color: #89b2ff;
 }
+
+.menu li.active {
+	/* ;font-size: 14px; */
+}
+
 
 .menu a {
 	text-decoration: none;
@@ -36,7 +42,8 @@ div.menu {
 
 .main {
 	float: left;
-	width: 720px;
+	width: 760px;
+	min-height: 800px;
 	padding: 10px 5px 5px 10px;
 }
 

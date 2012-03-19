@@ -13,11 +13,25 @@
 <body>
 	<div>
 	<div class="menu" style="height: 250px; width: 150px;">
+	<!-- 
+	
 	<ul>
 	<li><a href="/js/kcfinder/browse.php?type=images&lng=it">Stand Alone</a></li>
 	<li><a href="/article/edit/id/1">CK Editor</a></li>
 	</ul>
+	 -->
+	<?php 
+	$options = array(
+			'ulClass'          => 'left-menu',
+			'indent'           => '&nbsp;',
+			'minDepth'         => null,
+			'maxDepth'         => null,
+			'onlyActiveBranch' => false,
+			'renderParents'    => true
+	);
+	echo $this->navigation()->menu()->renderMenu(null, $options) ?>
 	</div>
+	
 	<div class="main">
 	<?php echo $this->layout()->content; ?>
 	
