@@ -20,6 +20,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$config = new Zend_Config_Xml ( APPLICATION_PATH . '/configs/navigation.xml', 'nav' );
 		$container = new Zend_Navigation ( $config );
 		$view->navigation ( $container );
+		$view->headLink()->appendStylesheet('/styles/grid.css');
 		
 		return $view;
 	}

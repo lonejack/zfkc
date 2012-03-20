@@ -31,6 +31,13 @@
 						</ckfinder>
 					</pages>
 				</demo>
+				<installation>
+					<label>Installation</label>
+					<module>default</module>
+					<controller>install</controller>
+					<action>index</action>
+					<title>Installation Instructions</title>
+				</installation>
 				
 			</pages>
 		</home>
