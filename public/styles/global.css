@@ -42,6 +42,7 @@ div.menu {
 div.menu * {
 	color: black;
 	/*background-color: red;*/
+	z-index:10;
 }
 
 div.menu li {
@@ -139,7 +140,7 @@ div.sub {
 
 div.sub ul li{
 	font-family: "Trebuchet MS";
-	font-size: 100%;
+	font-size: 90%;
 	font-weight: normal;
 	line-height:  20px;
 	
@@ -155,15 +156,25 @@ ul.menu li#b div.sub{
 
 .sub ul {
 	width: 120px;
-	
-	
+	margin-left: 10px;
+	list-style-position:inside;
 	
 }
 div .sub ul li {
 	float:  left;
 	width: 100%;
 	text-align: left;
-	
+	list-style-type: disc;
+	color: black;
+}
+
+div.sub a {
+	font-weight:bold;
+	color: black;
+}
+
+div.sub a:hover {
+	color: red;
 }
 
 .clear {
@@ -178,6 +189,7 @@ div.content {
 	/*margin: 10px 10px 10px 10px;*/
 	
 	/*background-color: white;*/
+	padding: 10px 10px 10px 10px; 
 	
 }
 
