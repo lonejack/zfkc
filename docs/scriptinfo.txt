@@ -1,0 +1,82 @@
+CKEDITOR:
+http://kcfinder.sunhater.com/demo/kcfinder/browse.php?type=images&dir=images/public&CKEditor=editor1&CKEditorFuncNum=2&langCode=it
+<script type="text/javascript">
+browser.version = "2.51";
+browser.support.chromeFrame = false;
+browser.support.zip = true;
+browser.support.check4Update = true;
+browser.lang = "it";
+browser.type = "images";
+browser.theme = "oxygen";
+browser.access = {"files":{"upload":true,"delete":true,"copy":true,"move":true,"rename":true},"dirs":{"create":true,"delete":true,"rename":true}};
+browser.dir = "images/public";
+browser.uploadURL = "http://kcfinder.sunhater.com/upload";
+browser.thumbsURL = browser.uploadURL + "/.thumbs";
+browser.opener.CKEditor = {};
+browser.opener.CKEditor.funcNum = 2;
+browser.cms = "";
+_.kuki.domain = "kcfinder.sunhater.com";
+_.kuki.path = "/";
+_.kuki.prefix = "KCFINDER_";
+$(document).ready(function() {
+    browser.resize();
+    browser.init();
+    $('#all').css('visibility', 'visible');
+});
+$(window).resize(browser.resize);
+</script>
+
+FCKEDITOR:
+http://kcfinder.sunhater.com/demo/kcfinder/browse.php?type=files&dir=files/public
+<script type="text/javascript">
+browser.version = "2.51";
+browser.support.chromeFrame = false;
+browser.support.zip = true;
+browser.support.check4Update = true;
+browser.lang = "en";
+browser.type = "files";
+browser.theme = "oxygen";
+browser.access = {"files":{"upload":true,"delete":true,"copy":true,"move":true,"rename":true},"dirs":{"create":true,"delete":true,"rename":true}};
+browser.dir = "files/public";
+browser.uploadURL = "http://kcfinder.sunhater.com/upload";
+browser.thumbsURL = browser.uploadURL + "/.thumbs";
+browser.cms = "";
+_.kuki.domain = "kcfinder.sunhater.com";
+_.kuki.path = "/";
+_.kuki.prefix = "KCFINDER_";
+$(document).ready(function() {
+    browser.resize();
+    browser.init();
+    $('#all').css('visibility', 'visible');
+});
+$(window).resize(browser.resize);
+</script>
+
+tinyMCE:
+http://kcfinder.sunhater.com/demo/kcfinder/browse.php?opener=tinymce&type=image&dir=image/public
+<script type="text/javascript">
+browser.version = "2.51";
+browser.support.chromeFrame = false;
+browser.support.zip = true;
+browser.support.check4Update = true;
+browser.lang = "en";
+browser.type = "image";
+browser.theme = "oxygen";
+browser.access = {"files":{"upload":true,"delete":true,"copy":true,"move":true,"rename":true},"dirs":{"create":true,"delete":true,"rename":true}};
+browser.dir = "image/public";
+browser.uploadURL = "http://kcfinder.sunhater.com/upload";
+browser.thumbsURL = browser.uploadURL + "/.thumbs";
+browser.opener.name = "tinymce";
+browser.opener.TinyMCE = true;
+browser.cms = "";
+_.kuki.domain = "kcfinder.sunhater.com";
+_.kuki.path = "/";
+_.kuki.prefix = "KCFINDER_";
+$(document).ready(function() {
+    browser.resize();
+    browser.init();
+    $('#all').css('visibility', 'visible');
+});
+$(window).resize(browser.resize);
+</script>
+

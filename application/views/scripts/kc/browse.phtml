@@ -1,45 +1,45 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>KCFinder: /<?php echo $this->session['dir'] ?></title>
+<title>KCFinder: /<?=  $this->dir ?></title>
 
 <link href="/kc/style/type/<?=$this->type ?>" rel="stylesheet" type="text/css" />
-<link href="<?=$this->publicPath?>themes/<?=$this->browser['theme']?>/style.css" rel="stylesheet" type="text/css" />
-<script src="<?=$this->publicPath?>js/jquery.js" type="text/javascript"></script>
+<link href="<?=$this->publicPath?>themes/<?=$this->theme?>/style.css" rel="stylesheet" type="text/css" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.rightClick.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.drag.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/helper.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>getjoiner.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>gettranslation.php?lang=<?php echo $this->language ?>" type="text/javascript"></script>
-<?php if (isset($this->browser['tinyMCE']) ): ?>
-<script src="<?= $this->tinyMCEPath ?>/tiny_mce_popup.js" type="text/javascript"></script>
+<?php if ( $this->isTinyMCE ): ?>
+<script src="<?= $this->tinyMCEpath ?>/tiny_mce_popup.js" type="text/javascript"></script>
 <?php endif; ?>
 <?php if (isset($this->init_theme)): ?>
 <script src="<?=$this->publicPath?><?=$this->init_theme ?>" type="text/javascript"></script>
 <?php endif; ?>
 <script type="text/javascript">
-browser.version = "<?=$this->browser['version'] ?>";
-browser.support.chromeFrame = <?=$this->browser['cromeFrame'] ?>;
-browser.support.zip = <?=$this->browser['supportZip'] ?>;
-browser.support.check4Update = <?= $this->browser['check4Update'] ?>;
-browser.lang = "<?= $this->language ?>";
-browser.type = "<?=  $this->browser['type'] ?>";
-browser.theme = "<?=  $this->browser['theme'] ?>";
-browser.access = <?=  $this->browser['access'] ?>;
-browser.dir = "<?=  $this->browser['dir'] ?>";
-browser.uploadURL = "<?=  $this->browser['uploadURL'] ?>";
-browser.thumbsURL = browser.uploadURL + "/<?=  $this->browser['thumbsDir'] ?>";
-<?php if ( $this->setOpener ): ?>
-browser.opener.name = "<?= $this->browser['openerName'] ?>";
+browser.version = "<?=$this->version ?>";
+browser.support.chromeFrame = <?=$this->cromeFrame?>;
+browser.support.zip = <?=$this->supportZip ?>;
+browser.support.check4Update = <?= $this->check4Update ?>;
+browser.lang = "<?= $this->lang ?>";
+browser.type = "<?=  $this->type ?>";
+browser.theme = "<?=  $this->theme ?>";
+browser.access = <?=  $this->access ?>;
+browser.dir = "<?=  $this->dir ?>";
+browser.uploadURL = "<?=  $this->uploadURL ?>";
+browser.thumbsURL = browser.uploadURL + "/<?=  $this->thumbsDir ?>";
+<?php if ( $this->setOpenerName ): ?>
+browser.opener.name = "<?= $this->openerName ?>";
 <?php endif; ?>
-<?php if ( $this->browser['isOpenedByCk']|| 1 ): ?>
+<?php if ( $this->isOpenedByCk ): ?>
 browser.opener.CKEditor = {};
-browser.opener.CKEditor.funcNum = <?php echo '2';/* $this->funcNumCkEditor */ ?>;
+browser.opener.CKEditor.funcNum = <?php echo $this->CKEditorFuncNum; ?>;
 <?php endif; ?>
-<?php if ($this->browser['tinyMCE'] ): ?>
+<?php if ($this->isTinyMCE ): ?>
 browser.opener.TinyMCE = true;
 <?php endif; ?>
-browser.cms = "<?=  $this->browser['cms'] ?>";
+browser.cms = "<?=  $this->cms ?>";
 _.kuki.domain = "<?= $this->kuki['server'] ?>";
 _.kuki.path = "<?=  $this->kuki['path'] ?>";
 _.kuki.prefix = "<?=  $this->kuki['prefix'] ?>";

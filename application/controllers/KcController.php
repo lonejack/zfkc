@@ -7,7 +7,7 @@ class KcController extends Zend_Controller_Action
 	protected $_kcfinderDir;
 	protected $_realpath;
 	protected $_uploadDir;
-	protected $_types;
+	protected $_type;
 	/**
 	 *
 	 * @var My_Controller_Action_Helper_Kcfiles
@@ -23,10 +23,12 @@ class KcController extends Zend_Controller_Action
 		$this->_realpath = $this->_kcfiles->normalize(PUBLIC_PATH.'/'.$this->_kcfiles->kcPath);
 
 		// define types we're working
-		$request = $this->getRequest();
-		$this->_types = $request->getParam('type','images');
 		$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(true);
+		$request = $this->getRequest();
+		$type = $request->getParam('type');
+		if( in_array($type, array('images','flash','files')) )
+			$this->_type = $type;
 	}
 
 	public function indexAction()
@@ -37,7 +39,7 @@ class KcController extends Zend_Controller_Action
 	public function thumbAction(){
 		$request = $this->getRequest();
 		$dir = $request->getParam('dir');
-		if(empty($dir) ) $dir = $this->_types;
+		if(empty($dir) ) $dir = $this->_type;
 		$file = $request->getParam('file',null);
 
 		$file_real = $this->_kcfiles->getUploadDir(array($dir,$file),false);
@@ -503,85 +505,95 @@ class KcController extends Zend_Controller_Action
 	{
 		$this->_helper->viewRenderer->setNoRender(false);
 		$request = $this->getRequest();
-		$params = $request->getParams();
 
 		$this->_kcfiles->setHeader('X-UA-Compatible', 'chrome=1',true)
 		->setHeader('Content-Type', 'text/html');
 
-		if( isset($this->_kcfiles->session) )
-		{
-			Zend_Session::setOptions($this->_kcfiles->session);
-		}
-		$this->view->title = 'demo';
 		$locale=new Zend_Locale();
-		$language = $locale->getLanguage();
-		$this->view->language = $language;
-		if( isset($params['theme']) && file_exists($this->_realpath."/themes/{$params['theme']}" ) )
-		{
-			$theme = $params['theme'];
-		}
-		else
-		{
-			$theme = $this->_kcfiles->theme;
-		}
-
+		$this->view->lang = $locale->getLanguage();
+	
+		$theme = $request->getParam('theme',$this->_kcfiles->theme);
 		if( file_exists($this->_realpath."/themes/{$theme}/init.js" ))
+		{
+			$this->view->init_theme = "themes/{$this->_kcfiles->theme}/init.js";
+		}
+		else 
 		{
 			$this->view->init_theme = "themes/{$theme}/init.js";
 		}
+		$this->view->publicPath = $this->_kcfiles->kcPath;
 
 		$browser = array();
-		$browser['theme'] = $theme;
+		$this->view->theme = $theme;
 
-		$browser['version'] = '2.51';
-		$browser['tinyMCE'] = null;
-		$browser['tinyMCEpath'] = null;
-		$browser['cromeFrame'] = 'false';
-		$browser['supportZip'] = 'true'; //class_exists('ZipArchive') && !$this->config['denyZipDownload']) ? "true" : "false"
-		$browser['check4Update'] = 'false'; //((!isset($this->config['denyUpdateCheck']) || !$this->config['denyUpdateCheck']) && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false"
-		$browser['type'] = 'images';
-		$kcsession = Zend_Session::namespaceGet('KcFinder');
-		$browser['dir'] = $this->_kcfiles->getSessionDir();//Admin_Model_Kclib_Text::jsValue($kcsession['dir']);
-		$browser['uploadURL'] = $this->_kcfiles->uploadURL;
-		$browser['thumbsDir'] = $this->_kcfiles->thumbsDir;
-		$browser['setOpener'] = false;
-		$browser['openerName'] = '';
-		$browser['isOpenedByCk'] = false; //isset($this->opener['CKEditor']['funcNum']) && preg_match('/^\d+$/', $this->opener['CKEditor']['funcNum'])
-		$browser['funcNumCkEditor'] = '';
-		$browser['openerName'] = null;
-		$browser['cms'] = null;
+		$this->view->version = '2.51';
+		
+		$this->view->cromeFrame = 'false';
+		$this->view->supportZip = $this->_kcfiles->denyZipDownload?'false':'true';
+		 
+		$this->view->check4Update = (!$this->_kcfiles->denyUpdateCheck && (ini_get("allow_url_fopen") || function_exists("http_get") || function_exists("curl_init") || function_exists('socket_create'))) ? "true" : "false";
+		
+		//$kcsession = Zend_Session::namespaceGet('KcFinder');
+		$this->view->dir = $this->_kcfiles->getSessionDir();
+		$this->view->uploadURL = $this->_kcfiles->uploadURL;
+		$this->view->thumbsDir = $this->_kcfiles->thumbsDir;
+		
+		$opener = $request->getParam('opener');
+		if( !is_null($opener)) {
+			$this->view->setOpenerName = true;
+			$this->view->openerName = $opener;
+			if($opener == 'tinymce')
+			{
+				$this->view->isTinyMCE = true;
+				$this->view->tinyMCEpath = $this->_kcfiles->tinyMCEpath;
+			}
+		}
+		
+		$cms = $request->getParam('cms');
+		if($cms != 'drupal')
+		{
+			$cms = null;
+		}
+		$this->view->cms = $cms;
+		
+		$CKEditorFuncNum = $request->getParam('CKEditorFuncNum');
+		if( !is_null($CKEditorFuncNum)) {
+			$this->view->isOpenedByCk = true;
+			$this->view->CKEditorFuncNum = $CKEditorFuncNum;
+		}
+		
 		$access = $this->_kcfiles->access;
 		foreach ($access as $key1 => $par1 ){
 			foreach ($par1 as $key=>$par){
-				if( $par )  {
-					$access[$key1][$key] = true;
-				}
-				else {
-					$access[$key1][$key] = false;
-				}
+				$access[$key1][$key] = (bool)$par;
 			}
 		}
-			
-		$browser['access'] = Zend_Json::encode($access);
+		
+		$this->view->access = Zend_Json::encode($access);
 		$front = Zend_Controller_Front::getInstance();
 
 		$kuki['path'] = '/';
 		$kuki['prefix'] = 'ZFKC_';
 		$kuki['server'] = $request->getServer('SERVER_NAME');
-		$this->view->type = 'images';
+
+		if( empty($this->_type))
+			throw new Zend_Exception('Invalid request');
+		$this->view->type = $this->_type;
 		$this->view->kuki = $kuki;
 		$this->view->browser = $browser;
-		$this->view->publicPath = $this->_kcfiles->kcPath;
+		
 
 	}
 
 	public function browseinitAction()
 	{
-
+		if( empty($this->_type))
+			throw new Zend_Exception('Invalid request');
+		
 		$mtime = @filemtime(__FILE__);
 		$dir = $this->_kcfiles->removeTypeFromPath($this->_kcfiles->getSessionDir());
 		$this->_kcfiles->setHeader('Content-Type', 'text/plain',true);
-		$data = $this->_kcfiles->init_browser($this->_kcfiles->getUploadDir($this->_types,false),$dir);
+		$data = $this->_kcfiles->init_browser($this->_kcfiles->getUploadDir($this->_type,false),$dir);
 		$this->sendJson($data);
 	}
 
