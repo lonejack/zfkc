@@ -16,6 +16,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	protected $_config;
 
 	/**
+	 *
+	 * @var array, contains the parameters requested
+	 */
+	protected $_params = array();
+
+
+	/**
 	 * Constructor
 	 *
 	 * Register action stack plugin
@@ -27,16 +34,16 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 
 	}
-	
+
 	public function sendImage($image){
 		$ext = strtolower( $this->getExtension($image) );
 		if( $ext != 'png' )
 			$ext = 'jpeg';
-		
+
 		$this->setHeader('Content-Type',"image/$ext",true);
 		readfile($image);
 	}
-	
+
 	public function sendZip($file, $filename=null, $unlink=false){
 		if( is_null($filename))
 			$filename=basename($file);
@@ -47,21 +54,21 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		if( $unlink )
 			unlink($file);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param unknown_type $type
 	 */
 	public function setHeader($header, $option = NULL, $clearall = false){
 		$response = $this->getResponse();
 		if($clearall)
 			$response->clearAllHeaders();
-		
+
 		switch($header){
 			default:
 				$response->setHeader($header, $option);
 				break;
-				
+
 			case 'Content-Type':
 				switch( $option ) {
 					case 'application/json':
@@ -74,7 +81,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 						break;
 				}
 				break;
-			
+					
 		}
 		return $this;
 	}
@@ -84,7 +91,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param unknown_type $options
 	 */
 	public function Config($config){
-		
+
 		if( $config instanceof Zend_Config ) {
 			$this->_config = $config->toArray();
 			$this->_config['dirPerms'] = octdec($this->_config['dirPerms']);
@@ -192,6 +199,47 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $result;
 	}
 
+	/**
+	 * methods for input checking
+	 */
+
+	
+	/**
+	 *
+	 * @param string $param, can be 'dir', 'type'...
+	 */
+	public function getParam($subject, $default = null) {
+		if( isset( $this->_params[$subject] ) ) {
+			return $this->_params[$subject];
+		}
+		$parameter = $this->getRequest()->getParam($subject, $default);
+		
+		switch($subject){
+			case 'type':
+				if( in_array($parameter, array('images','flash','files')) )
+					$this->_params['type'] = $parameter;
+				else
+					throw new Zend_Exception('Invalid request');
+				break;
+
+			case 'dir':
+				$type = $this->getParam('type');
+				// check that the first piece of 'dir' corresponds to type
+				$pieces = explode('/', $parameter);
+					
+				if( $pieces[0] == $type )
+					$this->_params[$subject] = $parameter;
+				else
+					throw new Zend_Exception('Invalid request');
+				break;
+
+			default:
+				$this->_params[$subject] = $parameter;
+				break;
+		}
+		return $this->_params[$subject];
+	}
+
 	/*************************************
 	 * METHODS FOR THUMBS CREATION
 	************************************/
@@ -218,11 +266,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		if( $destination === false )
 			return false;
-		$result = @imagecopyresampled($destination, $source, 0, 0, 0, 0, 
-					$dst_width, $dst_height, $src_widht, $src_height);
+		$result = @imagecopyresampled($destination, $source, 0, 0, 0, 0,
+				$dst_width, $dst_height, $src_widht, $src_height);
 		if( !$result )
 			return false;
-		return $destination; 
+		return $destination;
 
 	}
 
@@ -246,7 +294,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		unset($options[1]);
 		unset($options[2]);
 		unset($options[3]);
-		
+
 		return $options ;
 
 	}
@@ -337,7 +385,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		chmod($destination, $this->_config['filePerms']);
 		return ;
 	}
-	
+
 
 	/***********************************
 	 * FILES METHODS
@@ -350,13 +398,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$path = rtrim($path,DIRECTORY_SEPARATOR);
 			foreach ($subdir as $item )
 				$path .= DIRECTORY_SEPARATOR.$item;
-		} 
-		
+		}
+
 		if($end_directory_separator)
 			$path .= DIRECTORY_SEPARATOR;
 		return $path;
 	}
-	
+
 	function getUploadDir($subdir = null, $end_directory_separator = true){
 		$path = $this->_config['uploadDir'];
 		if(!is_array($subdir))
@@ -365,15 +413,16 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$path = rtrim($path,DIRECTORY_SEPARATOR);
 			foreach ($subdir as $item )
 				$path .= DIRECTORY_SEPARATOR.$item;
-		} 
+		}
 		if($end_directory_separator && substr($path, -1) !== DIRECTORY_SEPARATOR) {
 			$path .= DIRECTORY_SEPARATOR;
-		}			
+		}
 		return $path;
 	}
-	
+
 	function prependPath($path, &$subject, $checkExistence = true ){
 		$path =rtrim($path,'/');
+		$subject = ltrim($subject,'/');
 		if(is_array($subject)) {
 			foreach ($subject as $key => $item)
 			{
@@ -389,17 +438,17 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		}
 		return true;
 	}
-	
+
 	/** Get the extension from filename
 	 * @param string $file
 	 * @param bool $toLower
 	 * @return string */
-	
+
 	function getExtension($filename, $toLower=true) {
 		return preg_match('/^.*\.([^\.]*)$/s', $filename, $patt)
 		? ($toLower ? strtolower($patt[1]) : $patt[1]) : "";
 	}
-	
+
 	function existFile( $names ) {
 		if(is_string($names)) {
 			$names = array($names);
@@ -410,12 +459,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$name = rtrim($name,DIRECTORY_SEPARATOR);
 			$file = realpath($name);
 			$list[]=$file;
-				
+
 			if( $file != $name  )
 			{
 				return false;//throw new Exception('Invalid request!',-1);
 			}
-	
+
 			if ( !is_file($file) )
 			{
 				return false;//throw new Exception("file $name is Inexistant!",1);
@@ -424,7 +473,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			{
 				return false;//throw new Exception("file $name is unreadable",2);
 			}
-	
+
 		}
 		if( isset($retString) ) {
 			$list = $list[0];
@@ -439,7 +488,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 */
 
 	function getFiles($uploadDir,$dir) {
-
+		$uploadDir = rtrim($uploadDir,'/');
+		$dir = ltrim($dir,'/');
+		
 		$thumbDir = "$uploadDir/".self::THUMBS_DIR."/$dir";
 		$dir = "$uploadDir/$dir";
 		$return = array();
@@ -466,9 +517,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$name = basename($file);
 			$ext = $this->getExtension($file);
 			$theme = $this->_config['theme'];
-			$bigIcon = file_exists("themes/$theme/img/files/big/$ext.png");
-			$smallIcon = file_exists("themes/$theme/img/files/small/$ext.png");
-			$thumb = file_exists("$thumbDir/$name");
+			$bigPath = $this->_config['kcPath']."themes/$theme/img/files/big/$ext.png";
+			$bigIcon = $this->prependPath(PUBLIC_PATH,$bigPath);
+			$smallPath = $this->_config['kcPath']."themes/$theme/img/files/small/$ext.png";
+			$smallIcon = $this->prependPath(PUBLIC_PATH,$smallPath);
+			$thumbPath = "$thumbDir/$name";
+			$thumb = file_exists($thumbPath);
 			$return[] = array(
 					'name' => stripcslashes($name),
 					'size' => $stat['size'],
@@ -487,8 +541,8 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	/*******************************
 	 * Folder methods
-	 */
-	
+	*/
+
 	public function getSessionDir(){
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
@@ -504,7 +558,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
 		$zf_kceditor->sessionDir = $dir;
 	}
-	
+
 	/**
 	 *
 	 * @param path(string) $upload_dir absolute path to upload dir
@@ -514,7 +568,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	function checkDir( $dir ) {
 		$dir = rtrim($dir,DIRECTORY_SEPARATOR);
 		$directory = realpath($dir);
-		
+
 		if( $directory != $dir  )
 		{
 			return false; //throw new Exception('Invalid request!', 3);
@@ -528,7 +582,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		return true;
 	}
-	
+
 	/** Normalize the given path. On Windows servers backslash will be replaced
 	 * with slash. Remobes unnecessary doble slashes and double dots. Removes
 	 * last slash if it exists. Examples:
@@ -536,24 +590,24 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * Application_Model_kclib_Path::normalize("/your/path/..//home/") returns "/your/home"
 	 * @param string $path
 	 * @return string */
-	
+
 	function normalize($path) {
 		if ($this->getOs() == self::WIN) {
 			$path = preg_replace('/([^\\\])\\\([^\\\])/', "$1/$2", $path);
 			if (substr($path, -1) == "\\") $path = substr($path, 0, -1);
 			if (substr($path, 0, 1) == "\\") $path = "/" . substr($path, 1);
 		}
-	
+
 		$path = preg_replace('/\/+/s', "/", $path);
-	
+
 		$path = "/$path";
 		if (substr($path, -1) != "/")
 			$path .= "/";
-	
+
 		$expr = '/\/([^\/]{1}|[^\.\/]{2}|[^\/]{3,})\/\.\.\//s';
 		while (preg_match($expr, $path))
 			$path = preg_replace($expr, "/", $path);
-	
+
 		$path = substr($path, 0, -1);
 		$path = substr($path, 1);
 		return $path;
@@ -628,13 +682,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				'hasDirs' => $hasDirs
 		);
 
-		$check_dir = "{$this->_config['uploadDir']}/{$this->getSessionDir()}"; 
+		$check_dir = "{$this->_config['uploadDir']}/{$this->getSessionDir()}";
 		if ($dir == $check_dir)
 			$info['current'] = true;
 
 		return $info;
 	}
-	
+
 	/** Recursively delete the given directory. Returns TRUE on success.
 	 * If $firstFailExit parameter is true (default), the method returns the
 	 * path to the first failed file or directory which cannot be deleted.
@@ -645,7 +699,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param bool $firstFailExit
 	 * @param array $failed
 	 * @return mixed */
-	
+
 	function prune($dir, $firstFailExit=true, array $failed=null) {
 		if ($failed === null) $failed = array();
 		$files = $this->getDirContent($dir);
@@ -655,7 +709,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$failed[] = $dir;
 			return $failed;
 		}
-	
+
 		foreach ($files as $file) {
 			if (is_dir($file)) {
 				$failed_in = $this->prune($file, $firstFailExit, $failed);
@@ -673,17 +727,17 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				$failed[] = $file;
 			}
 		}
-	
+
 		if (!@rmdir($dir)) {
 			if ($firstFailExit)
 				return $dir;
 			$failed[] = $dir;
 		}
 		$ne = count($failed);
-		
+
 		return ($ne == 0) ? true : $ne;
 	}
-	
+
 	/** Get the content of the given directory. Returns an array with filenames
 	 * or FALSE on failure
 	 * @param string $dir
@@ -746,7 +800,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		}
 		closedir($dh);
-		
+
 		usort($files, get_class($this).'::fileNameCompare');
 		return $files;
 	}
@@ -775,9 +829,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			return self::WIN;
 		return self::LINUX;
 	}
-	
+
 	protected function _getTree($baseDir, $dpath, $index=0) {
-	
+
 		static $sub_dir;
 		$paths = array();
 		if( $index == 0 )
@@ -786,12 +840,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$sub_dir = explode("/", $dpath);
 			$paths = $this->getDirInfo($baseDir);
 		}
-		
+
 		/* search for subdirs under basedir */
 		$sub_paths = $this->getDirs($baseDir);
 		if( is_array($sub_paths) )
 		{
-			
+
 			foreach ($sub_paths as $key => $nPage)
 			{
 				if( isset($sub_dir[$index]) && $nPage['name'] == $sub_dir[$index] )
@@ -806,11 +860,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		}
 		return $paths;
 	}
-	
+
 	function init_browser($uploadDir, $sessionDir) {
-	
+
 		//$tree = self::getDirInfo($uploadDir);
-	
+
 		$tree = $this->_getTree($uploadDir, $sessionDir);
 		if (!is_array($tree['dirs']) || !count($tree['dirs']))
 			unset($tree['dirs']);
@@ -823,23 +877,24 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		);
 		return $data;
 	}
-	
+
 	function removeTypeFromPath($path) {
 		return preg_match('/^[^\/]*\/(.*)$/', $path, $patt)
 		? $patt[1] : "";
 	}
-	
-	function getParam($param, $default = null ){
-		$list = explode('/', $param);
-		$start = $this->_config;
-		foreach ($list as $token ) {
-			if( !isset($start[$token]))
-				return $default;
-			$start = $start[$token];
-		}
-		return $start;
+
+	/*
+	 function getParam($param, $default = null ){
+	$list = explode('/', $param);
+	$start = $this->_config;
+	foreach ($list as $token ) {
+	if( !isset($start[$token]))
+		return $default;
+	$start = $start[$token];
 	}
-	
+	return $start;
+	}
+	*/
 	public function __get($name)
 	{
 		if (array_key_exists($name, $this->_config)) {

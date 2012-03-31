@@ -29,7 +29,7 @@ browser.access = <?=  $this->access ?>;
 browser.dir = "<?=  $this->dir ?>";
 browser.uploadURL = "<?=  $this->uploadURL ?>";
 browser.thumbsURL = browser.uploadURL + "/<?=  $this->thumbsDir ?>";
-<?php if ( $this->setOpenerName ): ?>
+<?php if ( isset($this->openerName ) ): ?>
 browser.opener.name = "<?= $this->openerName ?>";
 <?php endif; ?>
 <?php if ( $this->isOpenedByCk ): ?>
