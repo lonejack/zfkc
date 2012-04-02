@@ -3,7 +3,7 @@
 class KcController extends Zend_Controller_Action
 {
 	const DIRECTORY_LANGUAGES	= 'kcLanguages';
-	const DIR_LANGUAGES = '/language';
+	protected $_translations_directory;
 	protected $_kcfinderDir;
 	protected $_realpath;
 	protected $_uploadDir;
@@ -17,6 +17,7 @@ class KcController extends Zend_Controller_Action
 	public function init()
 	{
 		/* Initialize action controller here */
+		$this->_translations_directory = realpath(APPLICATION_PATH. "/language");
 		$config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
 		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($config);
 
@@ -410,12 +411,10 @@ class KcController extends Zend_Controller_Action
 		$this->view->fields = null;
 		$locale_applied = $this->view->translator->getLocale();
 
-		$translation_dir = realpath(APPLICATION_PATH.self::DIR_LANGUAGES);
-
 		// get the correct language
-		$filename = $translation_dir.'/'.$locale_applied.'/kc.csv';
+		$filename = $this->_translations_directory.'/'.$locale_applied.'/kc.csv';
 		if( !file_exists($filename) ){
-			$filename = $translation_dir.'/en/kc.csv';
+			$filename = $this->_translations_directory.'/en/kc.csv';
 		}
 
 		$mtime = @filemtime($filename);
