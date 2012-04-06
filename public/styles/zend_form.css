@@ -1,0 +1,6 @@
+@CHARSET "UTF-8";
+
+dl.zend_form, dl.zend_form dt, dl.zend_form dd, dl.zend_form dl, dl.zend_form label, dl.zend_form select
+{
+	display:inline;
+}
