@@ -37,7 +37,7 @@ class Application_Form_Standalone extends Zend_Form
         	'onChange' => 'submit()'
         ));
         $language->addMultiOptions(array(
-        		"af"	  =>   "Afrikaans",
+        		//"af"	  =>   "Afrikaans",
         		"pt_BR"   =>   "Brazilian Portuguese",
         		"bg"	  =>   "Bulgarian",
         		"ca"	  =>   "Catalan",
@@ -74,7 +74,7 @@ class Application_Form_Standalone extends Zend_Form
         ));
         $style->addMultiOptions(array(
         		"dark"	  		=>   "dark",
-        		"oxigen"	  =>   "oxigen"));
+        		"oxygen"	  =>   "oxygen"));
         $this->addElement($style);
         
         $directory = new Zend_Form_Element_Select('directory', array(

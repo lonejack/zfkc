@@ -51,6 +51,13 @@ class DemoController extends Zend_Controller_Action
 						'directory'	=>	$sa_config->directory ));
 			
 		}
+		$this->view->language 	= $sa_config->language;
+		$this->view->style 		= $sa_config->style;
+		$this->view->directory 	= $sa_config->directory;
+		if( $sa_config->style == 'dark')
+			$this->view->ifbackground = '#3B4148';
+		else
+			$this->view->ifbackground = '#e0dfde';
 	}
 
 	public function indexAction(){

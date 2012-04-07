@@ -25,7 +25,7 @@ class KcController extends Zend_Controller_Action
 		
 		$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(true);
-		
+		$this->view->translator = $this->_kcfiles->getTranslator();
 	}
 
 	public function indexAction()

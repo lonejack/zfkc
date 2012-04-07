@@ -34,6 +34,44 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 
 	}
+	
+	/**
+	 * Localization 
+	 */
+	
+	protected function _getRequestedLanguage(){
+		$langInputNames = array('lang', 'langCode', 'lng', 'language', 'lang_code');
+		$request = $this->getRequest();
+		foreach ($langInputNames as $key) {
+			$param = $request->getParam($key);
+			if (isset($param) ) 
+				return $param;
+		}
+		return null;
+	}
+	
+	public function getTranslator($default = 'en'){
+		$translator = new Zend_Translate( array(
+				'adapter' => 'csv',
+				'content' => APPLICATION_PATH."/language/$default/kc.csv",
+				'locale'  => $default
+		));
+		$language = $this->_getRequestedLanguage();
+		if(!is_null($language))
+		{
+			$translator->addTranslation(
+					array(
+							'content' => APPLICATION_PATH."/language/$language/kc.csv",
+							'locale'  => $language,
+							'route'   => array($language => $default)
+					)
+			);
+			$translator->setLocale($language);
+		}
+		else 
+			$translator->setLocale($default);
+		return $translator;
+	}
 
 	public function sendImage($image){
 		$ext = strtolower( $this->getExtension($image) );
