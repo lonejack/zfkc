@@ -440,24 +440,37 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		}
 		return false;
 	}
+	
+	protected function _getDefaultThumb( $file ){
+		$ext = $this->_kcfiles->getExtension($file);
+		$thumb =  PUBLIC_PATH.'/'.$this->_kcfiles->kcPath . "/{$this->_kcfiles->theme}/img/files/big/$ext.png";
+		if( !is_file($thumb))
+			return false;
+		return $thumb;
+	}
 
-	public function makeThumb($source, $destination, $overwrite=false){
+	public function makeThumb($dir, $file, $overwrite=false){
+		$source = $this->getUploadDir(array($dir,$file),false);
+		$destination = $this->getThumbDir(array($dir,$file),false);
+		if( !is_file($source))
+			return false;
+		
+		if( is_file($destination) && !$overwrite )
+			return $destination;
+		
 		$info_gd = $this->getInfoImage($source);
 		if ($info_gd===false)
-			return true;
+			return $this->_getDefaultThumb($file);
 
 		$gd = $this->_getResource($source, $info_gd['type']);
 		// Drop files which are not GD handled images
 		if ($gd===false)
-			return true;
+			return $this->_getDefaultThumb($file);
 
 		$thumbDir = dirname($destination);
 		$perm = $this->_config['dirPerms'];
 		if (!is_dir($thumbDir) && !@mkdir($thumbDir,$perm , true))
-			return false;
-
-		if (!$overwrite && is_file($destination))
-			return true; // file already present
+			return $this->_getDefaultThumb($file);
 
 		// Images with smaller resolutions than thumbnails
 		if (($info_gd['width'] <= $this->_config['thumbWidth']) &&
@@ -465,20 +478,23 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$browsable = array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG);
 			// Drop only browsable types
 			if (!in_array($info_gd['type'], $browsable))
-				return true;
-
-			// Resize image
+			{
+				// get default thumb based on extension
+				return $this->_getDefaultThumb($file);
+			}
 		}
 		else{
 
 			$gd = $this->_getResourceDestination($gd, $info_gd['width'], $info_gd['height']);
 			if ($gd == false)
-				return false;
+				return $this->_getDefaultThumb($file);
 		}
 		// Save thumbnail
 		imagejpeg($gd, $destination, $this->_config['jpegQuality']);
 		chmod($destination, $this->_config['filePerms']);
-		return ;
+		return $destination;
+		
+		
 	}
 
 
@@ -655,10 +671,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	}
 
 	/**
-	 *
-	 * @param path(string) $upload_dir absolute path to upload dir
-	 * @param path(string) $dir relative path requested
-	 * @throws Exception
+	 * Check if the requested dir is: pointing to an allowed dir, a directory, readable 
+	 * @param path(string) $dir absolute path 
+	 * @return bool, true if the three conditions are valid 
 	 */
 	function checkDir( $dir ) {
 		$dir = rtrim($dir,DIRECTORY_SEPARATOR);

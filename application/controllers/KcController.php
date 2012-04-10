@@ -36,34 +36,9 @@ class KcController extends Zend_Controller_Action
 	public function thumbAction(){
 		$dir = $this->_kcfiles->getParam('dir');
 		$file = $this->_kcfiles->getParam('file');
-
-		$file_real = $this->_kcfiles->getUploadDir(array($dir,$file),false);
-		$thumb_real = $this->_kcfiles->getThumbDir(array($dir,$file),false);
-		if(!isset($file) && !$this->_kcfiles->existFile($file_real) )
-		{
+		$thumb = $this->_kcfiles->makeThumb($dir, $file);
+		if( $thumb === false )
 			return $this->_sendRaw( 'Unknown error.');
-		}
-
-		//$this->_kcfiles->getExtension($file_real)
-		if( !$this->_kcfiles->existFile($thumb_real) )
-			$this->_kcfiles->makeThumb($file_real, $thumb_real);
-
-		if( !$this->_kcfiles->existFile($thumb_real) ) {
-			/**
-			 * TODO: if thumb doesn't exist log the message
-			 */
-			$default = true;// get the default
-		}
-
-		if( isset($default ) )
-		{
-			$ext = $this->_kcfiles->getExtension($file_name);
-			$thumb = "{$this->_realpath}/themes/{$this->_kcfiles->theme}/img/files/big/$ext.png";
-		}
-		else
-		{
-			$thumb = $thumb_real;
-		}
 		$this->_kcfiles->sendImage($thumb);
 	}
 
