@@ -7,11 +7,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	const THUMBS_DIR 		= '.thumbs';
 	const CHAR_SET      	= 'utf-8';
 
-	protected $_zipfile;
-
 	/**
 	 *
-	 * @var array, configure the helper
+	 * @var array, helper configuration
 	 */
 	protected $_config;
 
@@ -24,9 +22,6 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	/**
 	 * Constructor
-	 *
-	 * Register action stack plugin
-	 *
 	 * @return void
 	 */
 	public function __construct()
@@ -36,10 +31,28 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	}
 	
 	/**
+	 * configure the helper
+	 * @param Zend_Config $config
+	 * @return this, the helper object
+	 */
+	public function Config($config){
+	
+		if( $config instanceof Zend_Config ) {
+			$this->_config = $config->toArray();
+			$this->_config['dirPerms'] = octdec($this->_config['dirPerms']);
+			$this->_config['filePerms'] = octdec($this->_config['filePerms']);
+		}
+		return $this;
+	}
+	/**
 	 * Localization 
 	 */
 	
-	protected function _getRequestedLanguage(){
+	/**
+	 * get from request the language
+	 * @return language code|string
+	 */
+	public function getRequestedLanguage(){
 		$langInputNames = array('lang', 'langCode', 'lng', 'language', 'lang_code');
 		$request = $this->getRequest();
 		foreach ($langInputNames as $key) {
@@ -47,17 +60,24 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			if (isset($param) ) 
 				return $param;
 		}
-		return null;
+		return 'en';
 	}
 	
-	public function getTranslator($default = 'en'){
+	/**
+	 * get the translator object that must be used on controller/view scripts
+	 * @param  set the default language, if null get the defaultlanguage from configuration
+	 * @return Zend_Translate object containing the default language and the requested language
+	 */
+	public function getTranslator($default = null){
+		if( is_null( $default ) )
+			$default = $this->_config['defaultlanguage'];
 		$translator = new Zend_Translate( array(
 				'adapter' => 'csv',
 				'content' => APPLICATION_PATH."/language/$default/kc.csv",
 				'locale'  => $default
 		));
-		$language = $this->_getRequestedLanguage();
-		if(!is_null($language))
+		$language = $this->getRequestedLanguage();
+		if($language!='en')
 		{
 			$translator->addTranslation(
 					array(
@@ -73,30 +93,44 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $translator;
 	}
 
-	public function sendImage($image){
-		$ext = strtolower( $this->getExtension($image) );
+	/**
+	 * set the header and send an image to the client 
+	 * @param $path to image
+	 */
+	public function sendImage($path){
+		$ext = strtolower( $this->getExtension($path) );
 		if( $ext != 'png' )
 			$ext = 'jpeg';
 
 		$this->setHeader('Content-Type',"image/$ext",true);
-		readfile($image);
-	}
-
-	public function sendZip($file, $filename=null, $unlink=false){
-		if( is_null($filename))
-			$filename=basename($file);
-		$this->setHeader('Content-Type','application/x-zip',true)->
-		setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')->
-		setHeader('Content-Length',filesize($file));
-		readfile($file);
-		if( $unlink )
-			unlink($file);
+		readfile($path);
 	}
 
 	/**
-	 *
-	 * @param unknown_type $type
+	 * set headers and send a zip file to the client
+	 * @param string $path to file
+	 * @param string $filename, define the filename destination
+	 * @param bool $unlink, if true unlink the file sent
 	 */
+	public function sendZip($path, $filename=null, $unlink=false){
+		if( is_null($filename))
+			$filename=basename($path);
+		$this->setHeader('Content-Type','application/x-zip',true)->
+		setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')->
+		setHeader('Content-Length',filesize($path));
+		readfile($path);
+		if( $unlink )
+			unlink($path);
+	}
+
+	/**
+	 * set the headers to answer, if $header coresponds to 'Content-Type' set other info else 
+	 * this method is identical to $response->setHeader($header, $option);
+	 * @param string $header
+	 * @param string $option argument
+	 * @param bool $clearall, if true remove all prevoius headers
+	 * @return My_Controller_Action_Helper_Kcfiles
+	 */	 
 	public function setHeader($header, $option = NULL, $clearall = false){
 		$response = $this->getResponse();
 		if($clearall)
@@ -124,11 +158,9 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $this;
 	}
 
-	/**
-	 *
-	 * @param unknown_type $options
-	 */
-	public function Config($config){
+	
+	/* moved 
+	 public function Config($config){
 
 		if( $config instanceof Zend_Config ) {
 			$this->_config = $config->toArray();
@@ -137,11 +169,16 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		}
 		return $this;
 	}
-
+    */
 	/**
-	 *
-	 * @param path $base_dir
+	 * create a temporary randomic filename based on session that can be stored on a base directory
+	 * the method check also if filename generated exists on the directory 
+	 * @param string $base_dir
+	 * @param string $extension
+	 * @throws Exception
+	 * @return string the filename
 	 */
+	 
 	public function getTemporaryFileName($base_dir, $extension='txt')
 	{
 		if( !Zend_Session::isStarted() )
@@ -154,18 +191,30 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		} while (file_exists($file));
 		return $file;
 	}
+	
 	/**
-	 *
-	 * @param path to $folder_source
-	 * @param path to $file_destination
+	 * zip a folder
+	 * @param string $folder_source containing the path to source folder
+	 * @param string $file_destination containing the path to destination file
+	 * @param array $ignored contain the files that mustn't be stored 
+	 * @throws Exception
 	 */
 	public function zipFolder($folder_source, $file_destination, $ignored = array() ){
-		$this->_zipfile = new ZipArchive();
-			
+		$zipfile = new ZipArchive();
+		$this->_zipFolder($folder_source, $file_destination, $ignored, $zipfile );
+	}
+	
+	/**
+	 * @see My_Controller_Action_Helper_Kcfiles::zipFolder
+	 * @param ZipArchive $zipfile
+	 * @throws Exception
+	 */
+	protected function _zipFolder($folder_source, $file_destination, $ignored = array(), $zipfile ){
+	
 		if( !is_array($ignored) )
 			throw new Exception("ignored must be an array");
 			
-		if ($this->_zipfile->open($file_destination, ZIPARCHIVE::CREATE) !== TRUE)
+		if ($zipfile->open($file_destination, ZIPARCHIVE::CREATE) !== TRUE)
 			throw new Exception("cannot open <$file>\n");
 		$folder_source = rtrim($folder_source, '/');
 
@@ -173,23 +222,31 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			$root = substr($folder_source, 0, strrpos($folder_source, '/') + 1);
 			$folder = substr($folder_source, strrpos($folder_source, '/') + 1);
 		}
-		$this->_zip($root, $folder, $ignored);
-		$this->_zipfile->close();
+		$this->_zip($root, $folder, $ignored, $zipfile);
+		$zipfile->close();
 	}
 
-	protected function _zip($root, $folder, $ignored, $parent=null) {
+	/**
+	 * recursive method that store files contained in a folder
+	 * @param string $root
+	 * @param string $folder
+	 * @param array $ignored conating the files do not store in the archive 
+	 * @param string $parent
+	 * @param ZipArchive $zipArchive
+	 */
+	protected function _zip($root, $folder, $ignored, $parent=null, $zipArchive ) {
 		$full_path = "$root$parent$folder";
 		$zip_path = "$parent$folder";
-		$this->_zipfile->addEmptyDir($zip_path);
+		$zipArchive->addEmptyDir($zip_path);
 		$dir = new DirectoryIterator($full_path);
 		foreach ($dir as $file)
 			if (!$file->isDot()) {
 			$filename = $file->getFilename();
 			if (!in_array($filename, $ignored)) {
 				if ($file->isDir())
-					$this->_zip($root, $filename, $ignored, "$zip_path/");
+					$this->_zip($root, $filename, $ignored, "$zip_path/", $zipArchive);
 				else
-					$this->_zipfile->addFile("$full_path/$filename", "$zip_path/$filename");
+					$zipArchive->addFile("$full_path/$filename", "$zip_path/$filename");
 			}
 		}
 	}
@@ -246,13 +303,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 *
 	 * @param string $param, can be 'dir', 'type'...
 	 */
-	public function getParam($subject, $default = null) {
-		if( isset( $this->_params[$subject] ) ) {
-			return $this->_params[$subject];
+	public function getParam($param, $default = null) {
+		if( isset( $this->_params[$param] ) ) {
+			return $this->_params[$param];
 		}
-		$parameter = $this->getRequest()->getParam($subject, $default);
+		$parameter = $this->getRequest()->getParam($param, $default);
 		
-		switch($subject){
+		switch($param){
 			case 'type':
 				if( in_array($parameter, array('images','flash','files')) )
 					$this->_params['type'] = $parameter;
@@ -266,16 +323,16 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				$pieces = explode('/', $parameter);
 					
 				if( $pieces[0] == $type )
-					$this->_params[$subject] = $parameter;
+					$this->_params[$param] = $parameter;
 				else
 					throw new Zend_Exception('Invalid request');
 				break;
 
 			default:
-				$this->_params[$subject] = $parameter;
+				$this->_params[$param] = $parameter;
 				break;
 		}
-		return $this->_params[$subject];
+		return $this->_params[$param];
 	}
 
 	/*************************************

@@ -22,7 +22,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$view->navigation ( $container );
 		$view->headLink()->appendStylesheet('/styles/grid.css');
 		$view->headLink()->appendStylesheet('/styles/global.css');
-		$view->headScript()->appendFile('http://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js','text/javascript');
+		$view->headScript()->appendFile('/js/kcfinder/js/jquery.js','text/javascript');
 		$view->headScript()->appendFile('/js/jquery.hoverIntent.minified.js','text/javascript');
 		
 		return $view;

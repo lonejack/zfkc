@@ -35,13 +35,13 @@ class KcController extends Zend_Controller_Action
 
 	public function thumbAction(){
 		$dir = $this->_kcfiles->getParam('dir');
-		$file = $this->_kcfiles->getParam('file',null);
+		$file = $this->_kcfiles->getParam('file');
 
 		$file_real = $this->_kcfiles->getUploadDir(array($dir,$file),false);
 		$thumb_real = $this->_kcfiles->getThumbDir(array($dir,$file),false);
 		if(!isset($file) && !$this->_kcfiles->existFile($file_real) )
 		{
-			return $this->sendRaw( 'Unknown error.');
+			return $this->_sendRaw( 'Unknown error.');
 		}
 
 		//$this->_kcfiles->getExtension($file_real)
@@ -69,14 +69,14 @@ class KcController extends Zend_Controller_Action
 
 	public function expandAction(){
 		
-		$dir = $this->_kcfiles->getParam('dir','');
+		$dir = $this->_kcfiles->getParam('dir');
 		$data = array('dirs' => $this->_kcfiles->getDirs($this->_kcfiles->getUploadDir($dir,false)));
 		$this->sendJson($data);
 	}
 
 	public function chdirAction()
 	{
-		$dir = $this->_kcfiles->getParam('dir','');
+		$dir = $this->_kcfiles->getParam('dir');
 		$directory = $this->_kcfiles->getUploadDir($dir,false);
 		if( !$this->_kcfiles->checkDir($directory) ){
 			return $this->sendJson('error', 'Unknown error.');
@@ -310,7 +310,7 @@ class KcController extends Zend_Controller_Action
 		$dir = $this->_kcfiles->getParam('dir');
 		$allowed = !$this->_kcfiles->denyZipDownload;
 		if ( !$allowed){
-			return $this->sendRaw( 'Unknown error.');
+			return $this->_sendRaw( 'Unknown error.');
 		}
 		$filename = basename($dir) . ".zip";
 		$file = $this->_kcfiles->getTemporaryFileName($this->_kcfiles->getUploadDir(null,false), 'zip');
@@ -327,7 +327,7 @@ class KcController extends Zend_Controller_Action
 		$filespath = $this->_kcfiles->prepend($this->_kcfiles->getUploadDir($dir),$files);
 		$readable = $this->_kcfiles->checkReadable($filespath);
 		if (!isset($dir) || !isset($files) || !$allowed || $hiddens || !$readable){
-			return $this->sendRaw( 'Unknown error.');
+			return $this->_sendRaw( 'Unknown error.');
 		}
 		$filename = basename($dir) . ".zip";
 		$file = $this->_kcfiles->getTemporaryFileName($this->_kcfiles->getUploadDir(null,false), 'zip');
@@ -343,7 +343,7 @@ class KcController extends Zend_Controller_Action
 		$filespath = $this->_kcfiles->prepend($this->_kcfiles->getUploadDir(),$files);
 		$readable = $this->_kcfiles->checkReadable($filespath);
 		if ( !isset($files) || !$allowed || $hiddens || !$readable){
-			return $this->sendRaw( 'Unknown error.');
+			return $this->_sendRaw( 'Unknown error.');
 		}
 		$file = $this->_kcfiles->getTemporaryFileName($this->_kcfiles->getUploadDir(null,false), 'zip');
 		$this->_kcfiles->zipList($filespath, $file);
@@ -406,8 +406,7 @@ class KcController extends Zend_Controller_Action
 
 	public function localizeAction()
 	{
-		$request = $this->getRequest();
-		$language = $request->getParam('lng','en');
+		$language = $this->_kcfiles->getRequestedLanguage();
 		$this->view->fields = null;
 		$locale_applied = $this->view->translator->getLocale();
 
@@ -530,8 +529,7 @@ class KcController extends Zend_Controller_Action
 			}
 		}
 
-		$locale=new Zend_Locale();
-		$this->view->lang = $locale->getLanguage();//OK
+		$this->view->lang = $this->_kcfiles->getRequestedLanguage();//OK
 
 		$this->view->version = '2.51';//OK
 		
@@ -588,13 +586,13 @@ class KcController extends Zend_Controller_Action
 	}
 
 	public function uploadAction(){
-
-		if( !$this->_kcfiles->access['files']['upload'] ) {
-			return $this->sendRaw( 'Unknown error.');
+        $access = $this->_kcfiles->access;
+		if( !$access['files']['upload'] ) {
+			return $this->_sendRaw( 'Unknown error.');
 		}		
 		$dir = $this->_kcfiles->getParam('dir');
 		if( !$this->_kcfiles->isWritable($this->_kcfiles->getUploadDir($dir,false)) ){
-			return $this->sendRaw( "Cannot access or write to upload folder.") ;
+			return $this->_sendRaw( "Cannot access or write to upload folder.") ;
 
 		}
 
@@ -610,21 +608,21 @@ class KcController extends Zend_Controller_Action
 			$dest_thumb = $this->_kcfiles->getThumbDir(array($dir,$file['name']),false);//$this->_uploadDir.'/.thumb'.$dir.'/'.$file['name'];
 
 			if( is_file($dest_file)){
-				return $this->sendRaw("You can't upload such files.") ;
+				return $this->_sendRaw("You can't upload such files.") ;
 			}
 			//"The uploaded file exceeds {size} bytes."
 			if( $file['size'] > $maxsize ){
-				return $this->sendRaw("The uploaded file exceeds {size} bytes.",array('{size}' => $maxsize));
+				return $this->_sendRaw("The uploaded file exceeds {size} bytes.",array('{size}' => $maxsize));
 			}
 			$upload->setDestination($this->_kcfiles->getUploadDir($dir,false));
 			if (!$upload->receive()) {
-				return $this->sendRaw("You can't upload such files.");
+				return $this->_sendRaw("You can't upload such files.");
 			}
 			$this->_kcfiles->makeThumb($dest_file, $dest_thumb);
 			$return[] = "/" . basename($file['name']);
 
 		}
-		$this->sendRaw($return) ;
+		$this->_sendRaw($return) ;
 	}
 
 	protected function sendJson($key, $data=null, $option=null ) {
@@ -645,7 +643,7 @@ class KcController extends Zend_Controller_Action
 		}
 	}
 
-	protected function sendRaw($data_array, $option=null){
+	protected function _sendRaw($data_array, $option=null){
 		if(!is_array($data_array)) {
 			$data_array = array($data_array);
 		}
