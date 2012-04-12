@@ -556,11 +556,16 @@ class KcController extends Zend_Controller_Action
 		$mtime = @filemtime(__FILE__);
 		$dir = $this->_kcfiles->removeTypeFromPath($this->_kcfiles->getSessionDir());
 		$this->_kcfiles->setHeader('Content-Type', 'text/plain',true);
-		$data = $this->_kcfiles->init_browser($this->_kcfiles->getUploadDir($type,false),$dir);
+		$data = $this->_kcfiles->init_browser($type,$dir);
 		$this->sendJson($data);
 	}
 
 	public function uploadAction(){
+		$maxsize = $this->_kcfiles->maxUploadSize;
+		$actualsize = $this->_kcfiles->getDirSize($this->_kcfiles->getUploadDir());
+		if( $actualsize > $maxsize)
+			return $this->_sendRaw( "Upload area too big") ;
+		
         $access = $this->_kcfiles->access;
 		if( !$access['files']['upload'] ) {
 			return $this->_sendRaw( 'Unknown error.');

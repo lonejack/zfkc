@@ -598,12 +598,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * @param unknown_type $dir, sub directory
 	 */
 
-	function getFiles($uploadDir,$dir) {
+	function getFiles($uploadDir,$subdir) {
 		$uploadDir = rtrim($uploadDir,'/');
-		$dir = ltrim($dir,'/');
+		$subdir = ltrim($subdir,'/');
 		
-		$thumbDir = "$uploadDir/".self::THUMBS_DIR."/$dir";
-		$dir = "$uploadDir/$dir";
+		$thumbDir = "$uploadDir/".self::THUMBS_DIR."/$subdir";
+		$dir = "$uploadDir/$subdir";
 		$return = array();
 		$files = $this->getDirContent($dir, array('types' => "file"));
 		if ($files === false){
@@ -615,7 +615,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			if (is_array($size) && count($size)) {
 				$thumb_file = "$thumbDir/" . basename($file);
 				if (!is_file($thumb_file))
-					$this->makeThumb($file, $thumb_file);
+					$this->makeThumb($subdir, basename($file));
 				$smallThumb =
 				($size[0] <= $this->_config['thumbWidth']) &&
 				($size[1] <= $this->_config['thumbHeight']) &&
@@ -652,7 +652,15 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	/*******************************
 	 * Folder methods
-	*/
+	 */
+	
+	public function getDirSize($path)
+	{
+		$io = popen('/usr/bin/du -sb '.$path, 'r');
+		$size = intval(fgets($io,80));
+		pclose($io);
+		return $size;
+	}
 
 	public function getSessionDir(){
 
@@ -971,15 +979,15 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $paths;
 	}
 
-	function init_browser($uploadDir, $sessionDir) {
+	function init_browser($type, $sessionDir) {
 
 		//$tree = self::getDirInfo($uploadDir);
 
-		$tree = $this->_getTree($uploadDir, $sessionDir);
+		$tree = $this->_getTree($this->getUploadDir($type), $sessionDir);
 		if (!is_array($tree['dirs']) || !count($tree['dirs']))
 			unset($tree['dirs']);
-		$files = $this->getFiles($uploadDir,$sessionDir);
-		$dirWritable = $this->isWritable("$uploadDir/$sessionDir");
+		$files = $this->getFiles($this->getUploadDir(),$type.'/'.$sessionDir);
+		$dirWritable = $this->isWritable($this->getUploadDir()."$type/$sessionDir");
 		$data = array(
 				'tree' => &$tree,
 				'files' => &$files,
@@ -992,6 +1000,8 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return preg_match('/^[^\/]*\/(.*)$/', $path, $patt)
 		? $patt[1] : "";
 	}
+	
+	
 
 	/*
 	 function getParam($param, $default = null ){
