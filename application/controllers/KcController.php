@@ -22,10 +22,13 @@ class KcController extends Zend_Controller_Action
 		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($config);
 
 		$this->_realpath = $this->_kcfiles->normalize(PUBLIC_PATH.'/'.$this->_kcfiles->kcPath);
-		
+		$action = $this->getRequest()->getActionName();
 		$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(true);
 		$this->view->translator = $this->_kcfiles->getTranslator();
+	
+		
+		
 	}
 
 	public function indexAction()
@@ -219,7 +222,7 @@ class KcController extends Zend_Controller_Action
 		}
 	}
 
-	public function copycbdAction($command='copy'){
+	public function cpcbdAction($command='copy'){
 		$dir = $this->_kcfiles->getParam('dir');
 		$files = $this->_kcfiles->getParam('files');
 		$allowed = $this->_kcfiles->access['files']['copy'];
@@ -239,6 +242,10 @@ class KcController extends Zend_Controller_Action
 			}
 		}
 		$files = $this->_kcfiles->getParam('files');
+		if ( !$this->_kcfiles->mkdir($this->_kcfiles->getThumbDir($dir,false)) ) {
+			return $this->sendJson('error', 'Unknown error.');			
+		}	
+			
 		foreach ($files as $fileOrig) {
 			$thumbDest = $this->_kcfiles->getThumbDir(array($dir,basename($fileOrig)),false);
 			$thumbOrig = $this->_kcfiles->getThumbDir(array($fileOrig),false);
@@ -250,11 +257,11 @@ class KcController extends Zend_Controller_Action
 		$this->sendJson(true);
 	}
 
-	public function movecbdAction(){
-		$this->copycbdAction('rename');
+	public function mvcbdAction(){
+		$this->cpcbdAction('rename');
 	}
 
-	public function removecbdAction(){
+	public function rmcbdAction(){
 		$files = $this->_kcfiles->getParam('files');
 		$allowed = $this->_kcfiles->access['files']['delete'];
 		$this->_kcfiles->prependPath($this->_kcfiles->getUploadDir(null,false), $files);
@@ -362,7 +369,7 @@ class KcController extends Zend_Controller_Action
 				$mtime = $fmtime;
 		}
 
-		$this->_kcfiles->setHeader('Content-Type', 'text/css',true)
+		$this->_kcfiles->setHeader('Content-Type', 'text/javascript',true)
 		->setHeader('Cache-Control', 'public, max-age=3600')
 		->setHeader('Pragma', 'public')
 		->setHeader('Last-Modified',gmdate("D, d M Y H:i:s", $mtime) . " GMT");
@@ -517,7 +524,7 @@ class KcController extends Zend_Controller_Action
 										function_exists("curl_init") || 
 										function_exists('socket_create'))) ? "true" : "false";//OK
 		
-		$this->view->uploadURL = $this->_kcfiles->uploadURL;//OK
+		$this->view->uploadURL = 'http://'.$request->getServer('SERVER_NAME').$this->_kcfiles->uploadURL;//OK
 		$this->view->thumbsDir = $this->_kcfiles->thumbsDir;//OK
 		
 		$cms = $request->getParam('cms');
@@ -549,7 +556,7 @@ class KcController extends Zend_Controller_Action
 		$this->view->kuki = $kuki;
 	}
 
-	public function browseinitAction()
+	public function initAction()
 	{
 		$type = $this->_kcfiles->getParam('type');
 		

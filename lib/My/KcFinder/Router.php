@@ -38,23 +38,7 @@ class My_KcFinder_Router extends Zend_Controller_Router_Route_Static
 				}
 				else
 				{
-					$jump = array(
-						'chDir'		=> 'chdir',
-						'init'		=> 'browseinit',
-						'cp_cbd'	=> 'copycbd',
-						'mv_cbd'	=> 'movecbd',
-						'rm_cbd'	=> 'removecbd'
-					);
-					
-					if( array_key_exists($params['act'], $jump) )
-					{
-						$defaults['action'] = $jump[$params['act']];
-					}
-					else
-					{
-						$defaults['action'] = $params['act'];
-					}
-					
+					$defaults['action'] = $params['act'];
 				}
 				break;
 				

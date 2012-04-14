@@ -448,6 +448,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			return false;
 		return $thumb;
 	}
+	
+	public function mkdir($directory) {
+		$perm = $this->_config['dirPerms'];
+		if (!is_dir($directory) )
+			@mkdir($directory,$perm , true);
+		return is_dir($directory);
+	}
 
 	public function makeThumb($dir, $file, $overwrite=false){
 		$source = $this->getUploadDir(array($dir,$file),false);
@@ -533,16 +540,17 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	function prependPath($path, &$subject, $checkExistence = true ){
 		$path =rtrim($path,'/');
-		$subject = ltrim($subject,'/');
+		
 		if(is_array($subject)) {
 			foreach ($subject as $key => $item)
-			{
-				$subject[$key] = $path.DIRECTORY_SEPARATOR.$item;
+			{	
+				$subject[$key] = $path.DIRECTORY_SEPARATOR.ltrim($item,'/');
 				if( $checkExistence && !file_exists($subject[$key]) )
 					return false;
 			}
 		}
 		else {
+			$subject = ltrim($subject,'/');
 			$subject = $path.DIRECTORY_SEPARATOR.$subject;
 			if( $checkExistence && !file_exists($subject) )
 				return false;
@@ -666,7 +674,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
 		if( !isset($zf_kceditor->sessionDir) ) {
-			$sessionDir = trim($this->_kcfiles['imagesDir'],'/');
+			$sessionDir = $this->getRequest()->getParam('type',trim($this->_kcfiles['imagesDir'],'/'));
 			$zf_kceditor->sessionDir = $sessionDir;
 		}
 		return $zf_kceditor->sessionDir;
@@ -799,7 +807,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				'removable' => $writable && $this->isWritable(dirname($dir)),
 				'hasDirs' => $hasDirs
 		);
-
+		
 		$check_dir = "{$this->_config['uploadDir']}/{$this->getSessionDir()}";
 		if ($dir == $check_dir)
 			$info['current'] = true;
@@ -955,20 +963,24 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		if( $index == 0 )
 		{
 			//build the tree on $path
-			$sub_dir = explode("/", $dpath);
+			
 			$paths = $this->getDirInfo($baseDir);
+			if( !empty($dpath))
+				$sub_dir = explode("/", $dpath);
+			
 		}
+		
 
 		/* search for subdirs under basedir */
 		$sub_paths = $this->getDirs($baseDir);
 		if( is_array($sub_paths) )
 		{
-
 			foreach ($sub_paths as $key => $nPage)
 			{
 				if( isset($sub_dir[$index]) && $nPage['name'] == $sub_dir[$index] )
 				{
 					$sub_paths[$key]['dirs']= $this->_getTree($baseDir.'/'.$sub_dir[$index], null, $index+1);
+					
 				}
 			}
 			if( $index == 0 )
@@ -976,6 +988,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 			else
 				$paths = $sub_paths;
 		}
+		
 		return $paths;
 	}
 
@@ -983,7 +996,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		//$tree = self::getDirInfo($uploadDir);
 
-		$tree = $this->_getTree($this->getUploadDir($type), $sessionDir);
+		$tree = $this->_getTree($this->getUploadDir($type,false), $sessionDir);
 		if (!is_array($tree['dirs']) || !count($tree['dirs']))
 			unset($tree['dirs']);
 		$files = $this->getFiles($this->getUploadDir(),$type.'/'.$sessionDir);
