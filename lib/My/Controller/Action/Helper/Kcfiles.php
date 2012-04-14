@@ -158,18 +158,6 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $this;
 	}
 
-	
-	/* moved 
-	 public function Config($config){
-
-		if( $config instanceof Zend_Config ) {
-			$this->_config = $config->toArray();
-			$this->_config['dirPerms'] = octdec($this->_config['dirPerms']);
-			$this->_config['filePerms'] = octdec($this->_config['filePerms']);
-		}
-		return $this;
-	}
-    */
 	/**
 	 * create a temporary randomic filename based on session that can be stored on a base directory
 	 * the method check also if filename generated exists on the directory 
@@ -361,7 +349,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	}
 
 	/*************************************
-	 * METHODS FOR THUMBS CREATION
+	 * Images methods
 	************************************/
 
 	/**
@@ -548,11 +536,8 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		imagejpeg($gd, $destination, $this->_config['jpegQuality']);
 		chmod($destination, $this->_config['filePerms']);
 		return $destination;
-		
-		
 	}
-
-
+	
 	/***********************************
 	 * FILES METHODS
 	***********************************/
@@ -560,6 +545,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * get thumbs directory and append to it further subdirectory
 	 * @param string|array of string $subdir
 	 * @param bool $end_directory_separator, define the end symbol at the end of the path
+	 * @return string path requested
 	 */
 	function getThumbDir($subdir = null, $end_directory_separator = true){
 		$path =  $this->_config['uploadDir']. DIRECTORY_SEPARATOR. self::THUMBS_DIR;
@@ -580,6 +566,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * get upload directory and append to it further subdirectory
 	 * @param string|array of string $subdir
 	 * @param bool $end_directory_separator, define the end symbol at the end of the path
+	 * @return string path
 	 */
 	function getUploadDir($subdir = null, $end_directory_separator = true){
 		$path = $this->_config['uploadDir'];
@@ -730,7 +717,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	/*******************************
 	 * Folder methods
-	 */
+	 *******************************/
 	/**
 	 * get directory size under a directory
 	 * @param string $path
