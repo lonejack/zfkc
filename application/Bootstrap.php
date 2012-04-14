@@ -22,7 +22,14 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 		$view->navigation ( $container );
 		$view->headLink()->appendStylesheet('/styles/grid.css');
 		$view->headLink()->appendStylesheet('/styles/global.css');
-		$view->headScript()->appendFile('/js/kcfinder/js/jquery.js','text/javascript');
+		
+		$env = $this->getEnvironment() ;
+		if( $env == 'production' ) {
+			$view->headScript()->appendFile('https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js','text/javascript');
+		}
+		else {
+			$view->headScript()->appendFile('/js/kcfinder/js/jquery.js','text/javascript');
+		}
 		$view->headScript()->appendFile('/js/jquery.hoverIntent.minified.js','text/javascript');
 		
 		return $view;
@@ -39,7 +46,13 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 	}
 	
 	protected function _initHelpers(){
-		
+		$env = $this->getEnvironment() ;
+		if( $env == 'production' ) {
+			
+		}
+		else {
+			
+		}
 	}
 	
 	

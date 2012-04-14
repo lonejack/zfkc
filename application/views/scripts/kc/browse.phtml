@@ -5,7 +5,8 @@
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8" />
 <link href="/kc/style/type/<?=$this->type ?>" rel="stylesheet" type="text/css" />
 <link href="<?=$this->publicPath?>themes/<?=$this->theme?>/style.css" rel="stylesheet" type="text/css" />
-<script src="/js/kcfinder/js/jquery.js" type="text/javascript"></script>
+<?php echo $this->headScript() ?>
+
 <script src="<?=$this->publicPath?>js/jquery.rightClick.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/jquery.drag.js" type="text/javascript"></script>
 <script src="<?=$this->publicPath?>js/helper.js" type="text/javascript"></script>

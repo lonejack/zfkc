@@ -251,6 +251,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		}
 	}
 
+	/**
+	 * build a zip archive and store inside a files list
+	 * @param array $list of files
+	 * @param string $file_destination of file destination
+	 * @throws Exception if the function requested doesn't work
+	 */
 	public function zipList($list, $file_destination ){
 		$zipfile = new ZipArchive();
 			
@@ -262,7 +268,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		$zipfile->close();
 	}
 
-	public function filterHidden($files){
+	/**
+	 * given an array of files check if there are hidden files on the list and remove them
+	 * @param array $files of string
+	 * @return boolean, true if at least one hidden file has been founded, false otherwise
+	 */
+	
+	public function filterHidden(&$files){
 		$found = false;
 		foreach ($files as $key => $file){
 			$tokens = explode('/', $file);
@@ -276,8 +288,15 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $found;
 	}
 
+	/**
+	 * determine if a file/array of files is/are readable
+	 * @param array/string $files
+	 * @return boolean, true if readable
+	 */
 	public function checkReadable($files){
 		$readable = true;
+		if( !is_array($files))
+			$files = (array)$files;
 		foreach ($files as $key => $file){
 			if(!is_readable($file))
 				$readable = false;
@@ -285,6 +304,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $readable;
 	}
 
+	/**
+	 * prepend a string to an array of strings
+	 * @param string $prefix
+	 * @param array $list
+	 */
 	public function prepend($prefix,$list){
 		$result = array();
 		foreach ($list as $key => $item ){
@@ -297,11 +321,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/**
 	 * methods for input checking
 	 */
-
 	
 	/**
-	 *
+	 * get a param from request and perform a check on some specific parameter 
 	 * @param string $param, can be 'dir', 'type'...
+	 * @return the parameter requested
+	 * @throws exceptions if the requested parameter isn't allowed
 	 */
 	public function getParam($param, $default = null) {
 		if( isset( $this->_params[$param] ) ) {
@@ -339,6 +364,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * METHODS FOR THUMBS CREATION
 	************************************/
 
+	/**
+	 * build a gd resource resampling an input resource(source)
+	 * @param gd resource $source
+	 * @param int $src_widht
+	 * @param int $src_height
+	 * @return boolean|resource, false if the creation fail, a gd resource otherwise
+	 */
 	protected function _getResourceDestination($source, $src_widht, $src_height)
 	{
 		$dst_width = $this->_config['thumbWidth'];
@@ -370,7 +402,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	}
 
 	/**
-	 *
+	 * get info on an image, dimension
 	 * @param string $source path to file
 	 * @return array indicating info regarding the image/false if the procedure fail
 	 */
@@ -394,7 +426,8 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 	}
 
-	/** Returns an array. Element 0 - GD resource. Element 1 - width. Element 2 - height.
+	/** 
+	 * Returns an array. Element 0 - GD resource. Element 1 - width. Element 2 - height.
 	 * Returns FALSE on failure. The only one parameter $image can be an instance of this class,
 	 * a GD resource, an array(width, height) or path to image file.
 	 * @param string(path) $image
@@ -441,6 +474,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return false;
 	}
 	
+	/**
+	 * get a default thumb based on the file extension 
+	 * @param string $file
+	 */
 	protected function _getDefaultThumb( $file ){
 		$ext = $this->_kcfiles->getExtension($file);
 		$thumb =  PUBLIC_PATH.'/'.$this->_kcfiles->kcPath . "/{$this->_kcfiles->theme}/img/files/big/$ext.png";
@@ -449,6 +486,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $thumb;
 	}
 	
+	/**
+	 * make dir (like mkdir) bus set permission as defined in configuration
+	 * @param string $directory
+	 */
 	public function mkdir($directory) {
 		$perm = $this->_config['dirPerms'];
 		if (!is_dir($directory) )
@@ -456,6 +497,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return is_dir($directory);
 	}
 
+	/**
+	 * create the thumb
+	 * @param string $dir
+	 * @param string $file
+	 * @param bool $overwrite, if true rebuild the thumb also if exist yet
+	 */
+	
 	public function makeThumb($dir, $file, $overwrite=false){
 		$source = $this->getUploadDir(array($dir,$file),false);
 		$destination = $this->getThumbDir(array($dir,$file),false);
@@ -508,6 +556,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/***********************************
 	 * FILES METHODS
 	***********************************/
+	/**
+	 * get thumbs directory and append to it further subdirectory
+	 * @param string|array of string $subdir
+	 * @param bool $end_directory_separator, define the end symbol at the end of the path
+	 */
 	function getThumbDir($subdir = null, $end_directory_separator = true){
 		$path =  $this->_config['uploadDir']. DIRECTORY_SEPARATOR. self::THUMBS_DIR;
 		if(!is_array($subdir))
@@ -523,6 +576,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $path;
 	}
 
+	/**
+	 * get upload directory and append to it further subdirectory
+	 * @param string|array of string $subdir
+	 * @param bool $end_directory_separator, define the end symbol at the end of the path
+	 */
 	function getUploadDir($subdir = null, $end_directory_separator = true){
 		$path = $this->_config['uploadDir'];
 		if(!is_array($subdir))
@@ -538,6 +596,13 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $path;
 	}
 
+	/**
+	 * prepend a path to an entity(by reference) and if requested check its existence 
+	 * @param string $path
+	 * @param string|array of string $subject
+	 * @param bool $checkExistence
+	 * @return boolean, true if checkexistence parameter isn't set to true
+	 */
 	function prependPath($path, &$subject, $checkExistence = true ){
 		$path =rtrim($path,'/');
 		
@@ -568,6 +633,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		? ($toLower ? strtolower($patt[1]) : $patt[1]) : "";
 	}
 
+	/**
+	 * check existence/readblilty of a file/array of files
+	 * @param string/arry of strings $names
+	 * @return bool, true/false
+	 */
 	function existFile( $names ) {
 		if(is_string($names)) {
 			$names = array($names);
@@ -661,7 +731,11 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/*******************************
 	 * Folder methods
 	 */
-	
+	/**
+	 * get directory size under a directory
+	 * @param string $path
+	 * @return integer size in bytes
+	 */
 	public function getDirSize($path)
 	{
 		$io = popen('/usr/bin/du -sb '.$path, 'r');
@@ -670,6 +744,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $size;
 	}
 
+	/**
+	 * get session dir, if the parameter isn't set it will be created(taking the default parameter on configuration)
+	 * @return string, the directory stored
+	 */
 	public function getSessionDir(){
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
@@ -680,6 +758,10 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $zf_kceditor->sessionDir;
 	}
 
+	/**
+	 * Store the session directory 
+	 * @param string, the directory to store
+	 */
 	public function setSessionDir($dir){
 
 		$zf_kceditor = new Zend_Session_Namespace('zf_kceditor');
@@ -709,13 +791,15 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return true;
 	}
 
-	/** Normalize the given path. On Windows servers backslash will be replaced
+	/** 
+	 * Normalize the given path. On Windows servers backslash will be replaced
 	 * with slash. Remobes unnecessary doble slashes and double dots. Removes
 	 * last slash if it exists. Examples:
 	 * Application_Model_kclib_Path::normalize("C:\\any\\path\\") returns "C:/any/path"
 	 * Application_Model_kclib_Path::normalize("/your/path/..//home/") returns "/your/home"
 	 * @param string $path
-	 * @return string */
+	 * @return string 
+	 **/
 
 	function normalize($path) {
 		if ($this->getOs() == self::WIN) {
@@ -783,7 +867,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	}
 
 	/**
-	 * ged directory info
+	 * get directory info
 	 * @param path $dir
 	 */
 
@@ -956,6 +1040,14 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return self::LINUX;
 	}
 
+	/**
+	 * Get a directory three starting from a base directory, this method is internal and has been built
+	 * for recursive calls
+	 * @param string $baseDir
+	 * @param string $dpath, the path that must be followed for analisys
+	 * @param integer $index of the token($dpath) considered
+	 * @return array
+	 */
 	protected function _getTree($baseDir, $dpath, $index=0) {
 
 		static $sub_dir;
@@ -969,8 +1061,6 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 				$sub_dir = explode("/", $dpath);
 			
 		}
-		
-
 		/* search for subdirs under basedir */
 		$sub_paths = $this->getDirs($baseDir);
 		if( is_array($sub_paths) )
@@ -992,6 +1082,12 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $paths;
 	}
 
+	/**
+	 * do the init act
+	 * @param string $type, see types parameter on configuration
+	 * @param string $sessionDir
+	 * @return array
+	 */
 	function init_browser($type, $sessionDir) {
 
 		//$tree = self::getDirInfo($uploadDir);
@@ -1009,25 +1105,21 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 		return $data;
 	}
 
+	/**
+	 * remove the first token from a given path
+	 * @param string $path
+	 * @return string
+	 */
 	function removeTypeFromPath($path) {
 		return preg_match('/^[^\/]*\/(.*)$/', $path, $patt)
 		? $patt[1] : "";
 	}
-	
-	
 
-	/*
-	 function getParam($param, $default = null ){
-	$list = explode('/', $param);
-	$start = $this->_config;
-	foreach ($list as $token ) {
-	if( !isset($start[$token]))
-		return $default;
-	$start = $start[$token];
-	}
-	return $start;
-	}
-	*/
+	/**
+	 * magic method for access to configuration parameters
+	 * @param string $name
+	 * @return the parameter stored in confuguration
+	 */
 	public function __get($name)
 	{
 		if (array_key_exists($name, $this->_config)) {
