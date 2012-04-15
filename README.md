@@ -1,1 +1,4 @@
-This project in an implementation of a connector for KCFinder module. In this project the conncetor has been radically modified in order to follow the Zend Framework structure. The connector (written in php also) distibuited with KCFinder.
+<b>Wellcome to ZFKC project</b>
+This project in an implementation of a connector for KCFinder module.
+In this project the connector distibuited with KCFinder has been radically modified in order to follow 
+the Zend Framework style. 
