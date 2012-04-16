@@ -1,6 +1,7 @@
 # Welcome to ZFKC project
-This project regards a php connector written in zend framework style for [KcFinder](http://kcfinder.sunhater.com// "KCFinder").
-The original project (server side) was designed in a manner that was not possible to manage privileges at user level. This connector instead makes this possible and is integrated on ZF infrastructure.
+This project regards a php connector written in zend framework for [KcFinder](http://kcfinder.sunhater.com// "KCFinder") module.
+The original code (server side) enlcosed in the origina package isn't designed in a manner that makes difficult to manage privileges at user level.
+This connector makes this possible and is integrated on ZF infrastructure.
  
 This project reflects the [demo site](http://zfkc.ovum.it/ "jump to zfkc.ovum.it"). The connector can be seen in these files:
 
@@ -10,7 +11,7 @@ This project reflects the [demo site](http://zfkc.ovum.it/ "jump to zfkc.ovum.it
 - application/views/scripts/kc/*
 - application/configs/KcConfig.ini
 
-The rest of the code regards the "demo site". Whenever you want to download and test this project is neccessary to include also the zend framework library(not included here):
+The rest of the code regards the "demo site". Whenever you want to download and test this project remember that is neccessary to include also the zend framework library(not included here):
 
 - library/Zend
 
