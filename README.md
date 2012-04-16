@@ -1,6 +1,6 @@
 # Welcome to ZFKC project
 This project regards a php connector written in zend framework for [KcFinder](http://kcfinder.sunhater.com// "KCFinder") module.
-The original code (server side) enlcosed in the origina package isn't designed in a manner that makes difficult to manage privileges at user level.
+The original code (server side) enclosed in the origina package is designed in a manner that makes difficult to manage privileges at user level.
 This connector makes this possible and is integrated on ZF infrastructure.
  
 This project reflects the [demo site](http://zfkc.ovum.it/ "jump to zfkc.ovum.it"). The connector can be seen in these files:
