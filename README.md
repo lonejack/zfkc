@@ -2,7 +2,7 @@
 This project regards a php connector written in zend framework for [KcFinder](http://kcfinder.sunhater.com// "go to KCFinder site") file manager.
 With the original code (server side) enclosed in the KcFinder package wasn't possible manage privileges at user level.
 The connector here created, should make easier this job. Furthermore, the original code, was adapt for standalone usage and(probably) for single user usage.
-Our requirements for tag release-0.5 are:
+Our requirements for release-0.5 are:
 
 - Zend Framework library;
 - each action on client side must correspond an action on a ZF controller;
