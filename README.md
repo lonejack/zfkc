@@ -1,5 +1,5 @@
 # Welcome to ZFKC project
-This project regards a php connector written in zend framework for [KcFinder file manager](http://kcfinder.sunhater.com// "go to KCFinder site") module.
+This project regards a php connector written in zend framework for [KcFinder](http://kcfinder.sunhater.com// "go to KCFinder site") file manager.
 The original code (server side) enclosed in the original package was designed in a manner that didn't allow to manage privileges at user level.
 The connector here created, should make easier this job. Furthermore, the original code, was adapt for standalone usage and(probably) for single user usage.
 Our requirements are:
