@@ -21,19 +21,8 @@ class IndexController extends Zend_Controller_Action {
 		echo $this->view->navigation ()->sitemap ();
 	}
 	
-	public function searchAction() {
-		// action body
-	}
-	
 	public function contactAction() {
 		// action body
-	}
-	
-	public function logoutAction()
-	{
-		$auth = Zend_Auth::getInstance();
-		$auth->clearIdentity();
-		$this->_redirect('/');
 	}
 	
 }
