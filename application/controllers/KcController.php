@@ -2,39 +2,30 @@
 
 class KcController extends Zend_Controller_Action
 {
-	const DIRECTORY_LANGUAGES	= 'kcLanguages';
-	protected $_translations_directory;
-	protected $_kcfinderDir;
-	protected $_realpath;
-	protected $_uploadDir;
-	protected $_type;
 	/**
 	 *
 	 * @var My_Controller_Action_Helper_Kcfiles
 	 */
 	protected $_kcfiles;
+	
 
 	public function init()
 	{
 		/* Initialize action controller here */
-		$this->_translations_directory = realpath(APPLICATION_PATH. "/language");
 		$config = new Zend_Config_Ini(APPLICATION_PATH."/configs/KcConfig.ini", 'browser' );
 		$this->_kcfiles = $this->_helper-> getHelper('Kcfiles')->Config($config);
-
-		$this->_realpath = $this->_kcfiles->normalize(PUBLIC_PATH.'/'.$this->_kcfiles->kcPath);
-		$action = $this->getRequest()->getActionName();
+		
 		$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(true);
-		$this->view->translator = $this->_kcfiles->getTranslator();
-	
-		
+		$request = $this->getRequest();
+		if( $request->getActionName() != 'translation')
+			$this->view->translator = $this->_kcfiles->getTranslator();
 		
 	}
 
 	public function indexAction()
 	{
 		// action body
-		
 	}
 
 	public function thumbAction(){
@@ -362,7 +353,7 @@ class KcController extends Zend_Controller_Action
 	public function getjoinerAction()
 	{
 		//$os = PHP_OS;
-		$path = $this->_kcfiles->normalize($this->_realpath."/js/browser");
+		$path = $this->_kcfiles->getRealPath("/js/browser");
 		$this->view->files = $this->_kcfiles->getDirContent($path, array( 'types' => "file", 'pattern' => '/^.*\.js$/'));
 		foreach ($this->view->files as $file) {
 			$fmtime = filemtime($file);
@@ -394,9 +385,9 @@ class KcController extends Zend_Controller_Action
 		$locale_applied = $this->view->translator->getLocale();
 
 		// get the correct language
-		$filename = $this->_translations_directory.'/'.$locale_applied.'/kc.csv';
+		$filename = $this->_kcfiles->getTranslationDir($locale_applied.'/kc.csv');
 		if( !file_exists($filename) ){
-			$filename = $this->_translations_directory.'/en/kc.csv';
+			$filename = $this->_kcfiles->getTranslationDir('/en/kc.csv');
 		}
 
 		$mtime = @filemtime($filename);
@@ -428,45 +419,42 @@ class KcController extends Zend_Controller_Action
 
 	}
 
-	public function createtranslationsAction(){
+	public function translationAction(){
+		if( !$this->_kcfiles->en_createtranslations )
+			return;
+		
 		$this->_helper->viewRenderer->setNoRender(false);
-		$translation_dir = realpath(dirname(__FILE__).'/../models/'.self::DIRECTORY_LANGUAGES);
-		$request = $this->getRequest();
-		$language = $request->getParam('language','en');
-
-		if ( $language != 'en' )
-			include_once APPLICATION_PATH."/models/kcLanguages/$language.php";
-		else
-			include_once APPLICATION_PATH."/models/kcLanguages/bg.php";
-		$class = new KcTranslation();
-		$items = $class->lang;
-		$en = array_keys($items);
-
-
-		unset($items[$en[0]]);
-		unset($items[$en[1]]);
-		unset($items[$en[2]]);
-		unset($items[$en[3]]);
-		unset($items[$en[4]]);
-		unset($items[$en[5]]);
-		unset($en[0]);
-		unset($en[1]);
-		unset($en[2]);
-		unset($en[3]);
-		unset($en[4]);
-		unset($en[5]);
-
-		$this->view->keys = $en;
-		if( $language == 'en' )
-		{
-			foreach ($items as $key => $item ){
-				$items[$key]=$key;
-
-			}
-
+		$origin = $this->_kcfiles->language['origin'];
+		$list = $this->_kcfiles->getDirContent($origin, array('pattern' => '/.+\.php/','addPath' => false ));
+		$languages = array();
+		foreach ($list as $lang ){
+			if(preg_match('/([a-z][a-z])\-([a-z][a-z])\.php/', $lang,$matches))
+				$l1 = $matches[1].'_'.strtoupper($matches[2]);
+			elseif (preg_match('/([a-z][a-z])\.php/', $lang,$matches))
+				$l1 = $matches[1];
+			$languages[$lang]=array('language-code' => $l1,'source' => $lang);
 		}
-		$this->view->data = $items;
-
+		include $origin.'/'.$this->_kcfiles->language['key_file'];
+		$this->view->keys = $keys = array_keys($lang);
+		$this->view->languages = $languages;
+		// build array 
+		$translation = array();
+		foreach ($languages as $key => $language ) {
+			include $origin.'/'.$key;
+			$lcode = $language['language-code'];
+			foreach ($keys as $item ){
+				if( isset( $lang[$item]))
+					$translation[$lcode][$item] = $lang[$item];
+				else {
+					$translation[$lcode][$item] = $item; // en case
+				}
+			}
+			$directory = $this->_kcfiles->language['destination'].'/'.$lcode;
+			$this->_kcfiles->mkdir($directory);
+			$this->_kcfiles->buildTranslation($translation[$lcode], $directory.'/kc.csv');
+		}
+		$this->view->translations = $translation;
+		return;
 	}
 
 	public function browseAction()
@@ -489,7 +477,7 @@ class KcController extends Zend_Controller_Action
 		$theme = $request->getParam('theme',$this->_kcfiles->theme);
 		$this->view->theme = $theme;//OK
 		
-		if( file_exists($this->_realpath."/themes/{$theme}/init.js" ))
+		if( file_exists($this->_kcfiles->getRealPath("/themes/{$theme}/init.js") ))
 		{
 			$theme = "themes/$theme/init.js";
 		}
@@ -592,8 +580,8 @@ class KcController extends Zend_Controller_Action
 		$maxsize = $this->_kcfiles->maxsize;
 		$return = array();
 		foreach ($files as $file ) {
-			$dest_file 	= $this->_kcfiles->getUploadDir(array($dir,$file['name']),false);//$this->_uploadDir.'/'.$dir.'/'.$file['name'];
-			$dest_thumb = $this->_kcfiles->getThumbDir(array($dir,$file['name']),false);//$this->_uploadDir.'/.thumb'.$dir.'/'.$file['name'];
+			$dest_file 	= $this->_kcfiles->getUploadDir(array($dir,$file['name']),false);
+			$dest_thumb = $this->_kcfiles->getThumbDir(array($dir,$file['name']),false);
 
 			if( is_file($dest_file)){
 				return $this->_sendRaw("You can't upload such files.") ;

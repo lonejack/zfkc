@@ -1,0 +1,26 @@
+<h2>Languages available</h2>
+<hr />
+<table>
+<thead><tr><th>Language</th><th>Set Source</th></tr></thead>
+<tbody>
+<?php
+foreach($this->languages as $value )
+	echo "<tr><td>{$value['language-code']}<td><td>{$value['source']}</td><tr>"
+?>
+</tbody>
+</table>
+<h2>Keys read from source</h2>
+<hr />
+<?php
+foreach($this->keys as $value )
+	echo "$value<br />"
+?>
+<h2>Translations</h2>
+<?php 
+foreach($this->translations as $lang => $list )
+{
+	echo '<h3>'.$lang.'</h3><hr />';
+	?>Number of string translated:<?=count($list) ?> <?php 
+}
+
+?>

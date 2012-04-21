@@ -542,6 +542,24 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	 * FILES METHODS
 	***********************************/
 	/**
+	 * Create a translation file 
+	 * @param array $array, of strings
+	 * @param string $destination path
+	 * @param string $format, allowed types: csv
+	 * @return true on success 
+	 */
+	public function buildTranslation($array, $destination, $format='csv') {
+		if($format != 'csv')
+			return false;
+		$file = fopen($destination, 'w');
+		foreach ($array as $key => $value ){
+			fprintf($file, "\"%s\";\"%s\"\n",$key,$value);
+			
+		}
+		fclose($file);
+		chmod($destination, $this->_config['filePerms']);
+	}
+	/**
 	 * get thumbs directory and append to it further subdirectory
 	 * @param string|array of string $subdir
 	 * @param bool $end_directory_separator, define the end symbol at the end of the path
@@ -718,6 +736,36 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 	/*******************************
 	 * Folder methods
 	 *******************************/
+	/**
+	 * get path to js code 
+	 * @param string $append
+	 * @param string $ds, DIRECTORY_SEPARATOR
+	 * @return the complete path
+	 */
+	public function getRealPath($append = null, $ds = DIRECTORY_SEPARATOR) {
+		$path = PUBLIC_PATH.$ds.$this->_config['kcPath'];
+		if( !is_null($append) ) {
+			$dir = ltrim($append,$ds);
+			$path .= $ds . $dir;
+		}
+		return $path;		
+	}
+	
+	/**
+	 * get path to translation dir
+	 * @param string $append
+	 * @param string $ds, DIRECTORY_SEPARATOR
+	 * @return the complete path
+	 */
+	public function getTranslationDir($append = null, $ds = DIRECTORY_SEPARATOR) {
+		$path = $this->_config['translationDir'];
+		if( !is_null($append) ) {
+			$dir = ltrim($append,$ds);
+			$path .= $ds . $dir;
+		}
+		return $path;
+	}
+	
 	/**
 	 * get directory size under a directory
 	 * @param string $path
@@ -971,7 +1019,7 @@ class My_Controller_Action_Helper_Kcfiles extends Zend_Controller_Action_Helper_
 
 		$files = array();
 		while (($file = @readdir($dh)) !== false) {
-			$type = filetype("$dir/$file");
+			$type = @filetype("$dir/$file");
 
 			if ($options['followLinks'] && ($type === "link")) {
 				$lfile = "$dir/$file";
