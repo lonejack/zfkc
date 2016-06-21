@@ -10,8 +10,7 @@ Our requirements for release-0.5.x are:
 - do not modify KCFinder javascript code and integrate it as it is;
 - first goal is obtain the same functionalities as the original but written in ZF style;
  
-This project reflects the [demo site](http://zfkc.ovum.it/ "jump to zfkc.ovum.it") and the source code here shown 
-isn't specific to the connector. The connector can be seen in the following files:
+The connector can be seen in the following files:
 
 - lib/My/Controller/Action/Helper/Kcfiles.php
 - lib/My/KcFinder/Router.php
